@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkagent extends be_module {
@@ -16,10 +16,10 @@ class chkagent extends be_module {
 		}
 		$agent = "";
 		if ( array_key_exists( 'HTTP_USER_AGENT', $_SERVER ) ) {
-			$agent = $_SERVER['HTTP_USER_AGENT'];
+			$agent = sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) );
 		}
 		if ( empty( $agent ) ) {
-			return __( 'Missing User Agent', 'stop-spammer-registrations-plugin' );
+			return 'Missing User Agent';
 		}
 		// user agent can be spoofed - move these exclusions to a better test when finished
 		if ( stripos( $agent, 'docs.google.com/viewer' ) !== false ) {
@@ -33,7 +33,7 @@ class chkagent extends be_module {
 		} // fix this?
 		foreach ( $badagents as $a ) {
 			if ( stripos( $agent, $a ) !== false ) {
-				return __( 'Block List User Agent: ', 'stop-spammer-registrations-plugin' ) . $a;
+				return 'Block List User Agent: ' . $a;
 			}
 		}
 		return false;

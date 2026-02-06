@@ -4,21 +4,29 @@
 // rename each function with an _l and then call after a load
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 function ss_append_file( $filename, &$content ) {
-	// this writes content to a file in the uploads director in the 'stop-spammer-registrations' directory
+	// this writes content to a file in the uploads directory in the 'stop-spammer-registrations' directory
 	// changed to write to the current directory - content_dir is a bad place
 	$file = SS_PLUGIN_DATA . $filename;
-	$f	  = @fopen( $file, 'a' );
-	if ( !$f ) {
-		return false;
+	// initialize the WordPress filesystem
+	global $wp_filesystem;
+	if ( empty( $wp_filesystem ) ) {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		WP_Filesystem();
 	}
-	fwrite( $f, $content );
-	fclose( $f );
-	@chmod( $file, 0640 ); // read/write for owner and owner groups
+	// check if the file exists and append content
+	if ( $wp_filesystem->exists( $file ) ) {
+		$current_content = $wp_filesystem->get_contents( $file );
+		$content = $current_content . $content; // Append new content
+	}
+	// write the content to the file
+	if ( $wp_filesystem->put_contents( $file, $content, FS_CHMOD_FILE ) === false ) {
+		return false; // failed to write to the file
+	}
 	return true;
 }
 
@@ -54,7 +62,7 @@ function ss_read_filex( $filename ) {
 	if ( file_exists( $file ) ) {
 		return file_get_contents( $file );
 	}
-	return __( 'File Not Found', 'stop-spammer-registrations-plugin' );
+	return 'File Not Found';
 }
 
 function ss_file_exists( $filename ) {
@@ -72,14 +80,15 @@ function ss_file_delete( $filename ) {
 
 // debug functions
 // change the debug = false to debug = true to start debugging
-// the plugin will drop a file sfs_debug_output.txt in the current directory (root, wp-admin, or network) 
+// the plugin will drop a file debug.txt in the current directory (root, wp-admin, or network)
 // directory must be writeable or plugin will crash
 function sfs_errorsonoff( $old = null ) {
-	$debug = true; // change to true to debug, false to stop all debugging
+	$debug = false; // change to true to debug, false to stop all debugging
 	if ( !$debug ) {
 		return;
 	}
 	if ( empty( $old ) ) {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- Debug function disabled by default, only used when explicitly enabled for diagnostics
 		return set_error_handler( "sfs_ErrorHandler" );
 	}
 	restore_error_handler();
@@ -87,15 +96,15 @@ function sfs_errorsonoff( $old = null ) {
 
 function sfs_debug_msg( $msg ) {
 	// used to aid debugging - adds to debug file
-	$debug = true;
+	$debug = false;
 	$ip	   = ss_get_ip();
 	if ( !$debug ) {
 		return;
 	}
-	$now = date( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
+	$now = gmdate( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
 	// get the program that is running
-	$sname = ( !empty( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : $_SERVER['SCRIPT_NAME'] );
-	@file_put_contents( SS_PLUGIN_DATA . ".sfs_debug_output.txt", "$now: $sname, $msg, $ip \r\n", FILE_APPEND );
+	$sname = isset( $_SERVER['REQUEST_URI'] ) && !empty( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : ( isset( $_SERVER['SCRIPT_NAME'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SCRIPT_NAME'] ) ) : '' );
+	@file_put_contents( SS_PLUGIN_DATA . "debug.txt", "$now: $sname, $msg, $ip \r\n", FILE_APPEND );
 }
 
 function sfs_ErrorHandler( $errno, $errmsg, $filename, $linenum ) {
@@ -109,25 +118,25 @@ function sfs_ErrorHandler( $errno, $errmsg, $filename, $linenum ) {
 	}
 	switch ( $errno ) {
 		case E_ERROR:
-			$serrno = __( 'Fatal run-time errors. These indicate errors that can not be recovered from, such as a memory allocation problem. Execution of the script is halted. ', 'stop-spammer-registrations-plugin' );
+			$serrno = 'Fatal run-time errors. These indicate errors that can not be recovered from, such as a memory allocation problem. Execution of the script is halted. ';
 			break;
 		case E_WARNING:
-			$serrno = __( 'Run-time warnings (non-fatal errors). Execution of the script is not halted. ', 'stop-spammer-registrations-plugin' );
+			$serrno = 'Run-time warnings (non-fatal errors). Execution of the script is not halted. ';
 			break;
 		case E_NOTICE:
-			$serrno = __( 'Run-time notices. Indicate that the script encountered something that could indicate an error, but could also happen in the normal course of running a script. ', 'stop-spammer-registrations-plugin' );
+			$serrno = 'Run-time notices. Indicate that the script encountered something that could indicate an error, but could also happen in the normal course of running a script. ';
 			break;
 		default;
-			$serrno = __( 'Unknown Error Type ' . $errno . '', 'stop-spammer-registrations-plugin' );
+			$serrno = 'Unknown Error Type ' . $errno . '';
 	}
-	if ( strpos( $errmsg, __( 'modify header information', 'stop-spammer-registrations-plugin' ) ) ) {
+	if ( strpos( $errmsg, 'modify header information' ) ) {
 		return false;
 	}
-	$now = date( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
+	$now = gmdate( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
 	$m1  = memory_get_usage( true );
 	$m2  = memory_get_peak_usage( true );
 	$ip  = ss_get_ip();
-	$msg = __( '
+	$msg = '
 		Time: ' . $now . '
 		Error Number: ' . $errno . '
 		Error Type: ' . $serrno . '
@@ -137,11 +146,32 @@ function sfs_ErrorHandler( $errno, $errmsg, $filename, $linenum ) {
 		Line Number: ' . $linenum . '
 		Memory Used: ' . $m1 . ' Peak: ' . $m2 . '
 		---------------------
-	', 'stop-spammer-registrations-plugin' );
+	';
 	$msg = str_replace( "\t", '', $msg );
 	// write out the error
-	@file_put_contents( SS_PLUGIN_DATA . '.sfs_debug_output.txt', $msg, FILE_APPEND );
+	@file_put_contents( SS_PLUGIN_DATA . 'debug.txt', $msg, FILE_APPEND );
 	return false;
 }
+
+// migrate wlist_email to wlist on plugin activation or update
+function ss_migrate_wlist_email() {
+	$options = get_option( 'ss_stop_sp_reg_options' );
+	if ( !$options || !is_array( $options ) ) {
+		return;
+	}
+	if ( !isset( $options['wlist_email'] ) || !is_array( $options['wlist_email'] ) || empty( $options['wlist_email'] ) ) {
+		return;
+	}
+	$wlist = isset( $options['wlist'] ) && is_array( $options['wlist'] ) ? $options['wlist'] : array();
+	foreach ( $options['wlist_email'] as $email ) {
+		if ( !in_array( $email, $wlist, true ) ) {
+			$wlist[] = $email;
+		}
+	}
+	$options['wlist'] = $wlist;
+	$options['wlist_email'] = array();
+	update_option( 'ss_stop_sp_reg_options', $options );
+}
+add_action( 'admin_init', 'ss_migrate_wlist_email' );
 
 ?>

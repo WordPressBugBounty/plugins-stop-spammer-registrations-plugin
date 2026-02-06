@@ -1,10 +1,11 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
+// phpcs:disable WordPress.Security.NonceVerification.Missing -- Nonce verified in process() method before calling other methods
 class ss_challenge extends be_module {
 	public function process( $ip, &$stats = array(), &$options = array(), &$post = array() ) {
 		// it looks like I am not getting my stats and options correctly
@@ -22,16 +23,15 @@ class ss_challenge extends be_module {
 		// display block message and CAPTCHA if set
 		// first, check to see if they should be redirected
 		if ( $options['redir'] == 'Y' && !empty( $options['redirurl'] ) ) {
-			// sfs_debug_msg( 'Redir?' );
+			if ( !wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['kn'] ?? '' ) ), 'ss_stopspam_block' ) ) {
+				wp_die( 'Invalid redirection request', 'Security Error', 403 );
+			}
 			if ( isset( $_POST["_wpcf7"] ) ) {
-				// echo json_encode( $_POST );
-				return json_encode( $_POST );
+				return wp_json_encode( array_map( 'sanitize_text_field', $_POST ) );
 			} else {
-				header( 'HTTP/1.1 307 Moved' );
-				header( 'Status: 307 Moved' );
-				header( "location: " . $options['redirurl'] );
+				wp_safe_redirect( esc_url_raw( $options['redirurl'] ), 307 );
 				exit();
-			}	
+			}
 		}
 		extract( $options );
 		$ke = '';
@@ -44,30 +44,21 @@ class ss_challenge extends be_module {
 		$nonce = '';
 		$msg   = ''; // this is the body message for failed CAPTCHAs, notifies and requests
 		if ( !empty( $_POST ) && array_key_exists( 'kn', $_POST ) ) {
-			// sfs_debug_msg( 'second time' );
-			// get the post items
-			if ( isset( $_POST['ke'] ) ) {
-				$ke = sanitize_email( $_POST['ke'] );
+			if ( !wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['kn'] ) ), 'ss_stopspam_block' ) ) {
+				wp_die( 'Invalid form submission', 'Security Error', 403 );
 			}
-			if ( array_key_exists( 'ke', $_POST ) ) {
-				$ke = sanitize_email( $_POST['ke'] );
-			}
-			if ( array_key_exists( 'km', $_POST ) ) {
-				$km = sanitize_text_field( $_POST['km'] );
-			}
+			$ke = isset( $_POST['ke'] ) ? sanitize_email( wp_unslash( $_POST['ke'] ) ) : '';
+			$km = isset( $_POST['km'] ) ? sanitize_text_field( wp_unslash( $_POST['km'] ) ) : '';
 			if ( strlen( $km ) > 80 ) {
 				$km = substr( $km, 0, 77 ) . '...';
 			}
-			if ( array_key_exists( 'kr', $_POST ) ) {
-				$kr = sanitize_text_field( $_POST['kr'] );
+			$kr = isset( $_POST['kr'] ) ? sanitize_text_field( wp_unslash( $_POST['kr'] ) ) : '';
+			$ka = isset( $_POST['ka'] ) ? sanitize_text_field( wp_unslash( $_POST['ka'] ) ) : '';
+			$kp = isset( $_POST['kp'] ) ? sanitize_textarea_field( wp_unslash( $_POST['kp'] ) ) : '';
+			if ( !empty( $ke ) && !is_email( $ke ) ) {
+				wp_die( 'Invalid email address', 'Validation Error', 400 );
 			}
-			if ( array_key_exists( 'ka', $_POST ) ) {
-				$ka = sanitize_text_field( $_POST['ka'] );
-			}
-			if ( array_key_exists( 'kp', $_POST ) ) {
-				$kp = sanitize_textarea_field( $_POST['kp'] );
-			} // serialized post
-			if ( !empty( $_POST['kn'] ) && wp_verify_nonce( $_POST['kn'], 'ss_stopspam_block' ) ) {
+			if ( !empty( $_POST['kn'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash ( $_POST['kn'] ) ), 'ss_stopspam_block' ) ) {
 				// sfs_debug_msg( 'nonce is good' );
 				// have a form return
 				// 1) to see if the allow by request has been triggered
@@ -78,16 +69,16 @@ class ss_challenge extends be_module {
 					$allowset = $this->ss_add_allow( $ip, $options, $stats, $post, $post );
 				}
 				// now the CAPTCHA settings
-				$msg = __( 'Thank you,<br>', 'stop-spammer-registrations-plugin' );
+				$msg = 'Thank you,<br>';
 				if ( $emailsent ) {
-					$msg .= __( 'The webmaster has been notified by email.<br>', 'stop-spammer-registrations-plugin' );
+					$msg .= 'The webmaster has been notified by email.<br>';
 				}
 				if ( $allowset ) {
-					$msg .= __( 'Your request has been recorded.<br>', 'stop-spammer-registrations-plugin' );
+					$msg .= 'Your request has been recorded.<br>';
 				}
 				if ( empty( $chkcaptcha ) || $chkcaptcha == 'N' ) {
 					// send out the thank you message
-					wp_die( $msg, "Stop Spammers", array( 'response' => 200 ) );
+					wp_die( wp_kses_post( $msg ), "Stop Spammers", array( 'response' => 200 ) );
 					exit();
 				}
 				// they submitted a CAPTCHA
@@ -98,9 +89,9 @@ class ss_challenge extends be_module {
 							$recaptchaapisecret = $options['recaptchaapisecret'];
 							$recaptchaapisite   = $options['recaptchaapisite'];
 							if ( empty( $recaptchaapisecret ) || empty( $recaptchaapisite ) ) {
-								$msg = __( 'reCAPTCHA keys are not set.', 'stop-spammer-registrations-plugin' );
+								$msg = 'reCAPTCHA keys are not set.';
 							} else {
-								$g = sanitize_textarea_field( $_REQUEST['g-recaptcha-response'] );
+								$g = isset( $_REQUEST['g-recaptcha-response'] ) ? sanitize_textarea_field( wp_unslash( $_REQUEST['g-recaptcha-response'] ) ) : '';
 								// $url = "https://www.google.com/recaptcha/api/siteverify";
 								$url  = "https://www.google.com/recaptcha/api/siteverify?secret=$recaptchaapisecret&response=$g&remoteip=$ip";
 								$resp = ss_read_file( $url );
@@ -110,11 +101,11 @@ class ss_challenge extends be_module {
 									$_POST = unserialize( base64_decode( $kp ), ['allowed_classes' => false] );
 									// sfs_debug_msg( "trying to return the post to the comments program" . print_r( $_POST, true ) );
 									// success add to cache
-									ss_log_good( $ip, __( 'Passed reCAPTCHA', 'stop-spammer-registrations-plugin' ), 'pass' );
+									ss_log_good( $ip, 'Passed reCAPTCHA', 'pass' );
 									do_action( 'ss_stop_spam_ok', $ip, $post ); // so plugins can undo spam report
 									return false;
 								} else {
-									$msg = __( 'Google reCAPTCHA entry does not match. Try again.', 'stop-spammer-registrations-plugin' );
+									$msg = 'Google reCAPTCHA entry does not match. Try again.';
 								}
 							}
 						}
@@ -129,9 +120,9 @@ class ss_challenge extends be_module {
 							print_r( $hcaptchaapisite );
 							exit;*/
 							if ( empty( $hcaptchaapisecret ) || empty( $hcaptchaapisite ) ) {
-								$msg = __( 'hCaptcha keys are not set.', 'stop-spammer-registrations-plugin' );
+								$msg = 'hCaptcha keys are not set.';
 							} else {
-								$h = sanitize_textarea_field( $_REQUEST['h-captcha-response'] );
+								$h = isset( $_REQUEST['h-captcha-response'] ) ? sanitize_textarea_field( wp_unslash( $_REQUEST['h-captcha-response'] ) ) : '';
 								// $url = "https://hcaptcha.com/siteverify";
 								$url  = "https://hcaptcha.com/siteverify?secret=$hcaptchaapisecret&response=$h&remoteip=$ip";
 								$resp = ss_read_file( $url );
@@ -142,11 +133,11 @@ class ss_challenge extends be_module {
 									$_POST = unserialize( base64_decode( $kp ), ['allowed_classes' => false] );
 									// sfs_debug_msg( "trying to return the post to the comments program" . print_r( $_POST, true ) );
 									// success add to cache
-									ss_log_good( $ip, __( 'Passed hCaptcha', 'stop-spammer-registrations-plugin' ), 'pass' );
+									ss_log_good( $ip, 'Passed hCaptcha', 'pass' );
 									do_action( 'ss_stop_spam_ok', $ip, $post ); // so plugins can undo spam report
 									return false;
 								} else {
-									$msg = __( 'hCaptcha entry does not match. Try again.', 'stop-spammer-registrations-plugin' );
+									$msg = 'hCaptcha entry does not match. Try again.';
 								}
 							}
 						}
@@ -156,8 +147,8 @@ class ss_challenge extends be_module {
 							// solve media
 							$solvmediaapivchallenge = $options['solvmediaapivchallenge'];
 							$solvmediaapiverify	    = $options['solvmediaapiverify'];
-							$adcopy_challenge	    = sanitize_textarea_field( $_REQUEST['adcopy_challenge'] );
-							$adcopy_response		= sanitize_textarea_field( $_REQUEST['adcopy_response'] );
+							$adcopy_challenge = isset( $_REQUEST['adcopy_challenge'] ) ? sanitize_textarea_field( wp_unslash( $_REQUEST['adcopy_challenge'] ) ) : '';
+							$adcopy_response = isset( $_REQUEST['adcopy_response'] ) ? sanitize_textarea_field( wp_unslash( $_REQUEST['adcopy_response'] ) ) : '';
 							// $ip = '127.0.0.1';
 							$postdata = http_build_query(
 								array(
@@ -200,16 +191,16 @@ class ss_challenge extends be_module {
 							$url		 = 'https://verify.solvemedia.com/papi/verify/';
 							$resultarray = wp_remote_post( $url, $args );
 							$result	     = $resultarray['body'];
-							// $result = file_get_contents( '//verify.solvemedia.com/papi/verify/', false, $context );  
+							// $result = file_get_contents( '//verify.solvemedia.com/papi/verify/', false, $context );
 							if ( strpos( $result, 'true' ) !== false ) {
 								$_POST = unserialize( base64_decode( $kp ), ['allowed_classes' => false] );
 								// sfs_debug_msg( "trying to return the post to the comments program" . print_r( $_POST, true ) );
 								// success add to cache
-								ss_log_good( $ip, __( 'Passed Solve Media CAPTCHA', 'stop-spammer-registrations-plugin' ), 'pass' );
+								ss_log_good( $ip, 'Passed Solve Media CAPTCHA', 'pass' );
 								do_action( 'ss_stop_spam_ok', $ip, $post ); // so plugins can undo spam report
 								return false;
 							} else {
-								$msg = __( 'CAPTCHA entry does not match. Try again.', 'stop-spammer-registrations-plugin' );
+								$msg = 'CAPTCHA entry does not match. Try again.';
 							}
 						}
 						break;
@@ -222,18 +213,18 @@ class ss_challenge extends be_module {
 							if ( !empty( $spdate ) ) {
 								$seed = strtotime( $spdate );
 							}
-							$nums  = really_clean( sanitize_text_field( $_POST['nums'] ) );
+							$nums  = really_clean( sanitize_text_field( wp_unslash( $_POST['nums'] ) ) );
 							$nums += $seed;
-							$sum   = really_clean( sanitize_text_field( $_POST['sum'] ) );
+							$sum   = isset( $_POST['sum'] ) ? really_clean( sanitize_text_field( wp_unslash( $_POST['sum'] ) ) ) : '';
 							if ( $sum == $nums ) {
 								$_POST = unserialize( base64_decode( $kp ), ['allowed_classes' => false] );
 								// sfs_debug_msg( "trying to return the post to the comments program" . print_r( $_POST, true ) );
 								// success add to cache
-								ss_log_good( $ip, __( 'Passed Simple Arithmetic CAPTCHA', 'stop-spammer-registrations-plugin' ), 'pass' );
+								ss_log_good( $ip, 'Passed Simple Arithmetic CAPTCHA', 'pass' );
 								do_action( 'ss_stop_spam_ok', $ip, $post ); // so plugins can undo spam report
 								return false;
 							} else {
-								$msg = __( 'Incorrect. Try again.', 'stop-spammer-registrations-plugin' );
+								$msg = 'Incorrect. Try again.';
 							}
 						}
 						break;
@@ -245,13 +236,14 @@ class ss_challenge extends be_module {
 		// sfs_debug_msg( 'leaving second time' );
 		} else {
 			// first time through
-			$ke = $post['email'];
-			$km = '';
-			$kr = "";
-			if ( array_key_exists( 'reason', $post ) )
-				$kr = $post['reason'];
-			$ka = sanitize_user( $post['author'] );
-			$kp = base64_encode( serialize( $_POST ) );
+			$ke = '';
+			if ( isset( $post['email'] ) ) {
+				$sanitized_email = sanitize_email( $post['email'] );
+				$ke = is_email( $sanitized_email ) ? $sanitized_email : '';
+			}
+			$kr = isset( $post['reason'] ) ? sanitize_text_field( $post['reason'] ) : '';
+			$ka = isset( $post['author'] ) ? sanitize_user( $post['author'] ) : '';
+			$kp = base64_encode( serialize( array_map( 'sanitize_text_field', $_POST ) ) );
 			// sfs_debug_msg( 'first time getting post stuff' );
 		}
 		// sfs_debug_msg( 'creating form data' );
@@ -260,7 +252,7 @@ class ss_challenge extends be_module {
 		// this may be the second time through
 		$formtop = '';
 		if ( !empty( $msg ) ) {
-			$msg = "\r\n<br><span style='color:red'> $msg </span><hr>\r\n";
+			$msg = "\r\n<br><span style='color:red'>" . wp_kses_post( $msg ) . "</span><hr>\r\n";
 		}
 		$formtop .= '
 			<form action="" method="post">
@@ -270,31 +262,32 @@ class ss_challenge extends be_module {
 				<input type="hidden" name="kr" value="' . esc_attr( $kr ) . '">
 				<input type="hidden" name="ka" value="' . esc_attr( $ka ) . '">
 		';
-		$formbot = __( '
-				<p><input style="background:#007cba;padding:10px 15px;border:none;border-radius:3px;color:white;cursor:pointer" type="submit" value="Submit Request"></p>
+		$formbot = '
+				<p><input type="submit" class="button button-large" value="Submit Request"></p>
 			</form>
-		', 'stop-spammer-registrations-plugin' );
+		';
 		$not	 = '';
 		if ( $wlreq == 'Y' ) {
 			// halfhearted attempt to hide which field is the email field
-			$not = __( '
+			$not = '
 				<h1>Allow Request</h1>
 				<p>You have been blocked from entering information on this site. In order to prevent this from happening in the future, complete the request below to have the admin add your IP to a list that allows you full access.</p>
 				<p>Please enter your <strong>e</strong><strong>ma</strong><strong>il</strong> <strong>add</strong><strong>re</strong><strong>ss</strong> and a short note requesting access here.</p>
-				Email Address (required)<!-- not the message -->: <input type="text" value="" name="ke" style="padding:5px" class="regular-text"><br>
-				Message<!-- not email -->:<br><textarea name="km" placeholder="Explain what you were trying to do or if you were submitting a contact form, re-enter your message." rows="5" style="box-sizing:border-box;width:100%;padding:15px" class="large-text"></textarea>
-			', 'stop-spammer-registrations-plugin' );
+				Email Address (required)<!-- not the message -->: <input type="text" value="" name="ke" style="padding:5px"><br>
+				Message<!-- not email -->:<br><textarea name="km" rows="5" style="box-sizing:border-box;width:90%;padding:15px" placeholder="Explain what you were trying to do or if you were submitting a contact form, re-enter your message."></textarea>
+			';
 		}
-		$captop = __( '<h1>Are you human?</h1>', 'stop-spammer-registrations-plugin' );
+		$captop = '<h1>Are you human?</h1>';
 		$capbot = "";
 		// now the CAPTCHAs
 		$cap = '';
+		// phpcs:disable WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Third-party CAPTCHA scripts must be loaded inline per vendor requirements
 		switch ( $chkcaptcha ) {
 			case 'G':
 				// reCAPTCHA
 				$recaptchaapisite = $options['recaptchaapisite'];
 				$cap			  = "
-					<script src='https://www.google.com/recaptcha/api.js' async defer></script>\r\n
+					<script src='https://www.google.com/recaptcha/api.js' async defer></script>
 					<input type='hidden' name='recaptcha' value='recaptcha'>
 					<div class='g-recaptcha' data-sitekey='$recaptchaapisite'></div>
 				";
@@ -303,7 +296,7 @@ class ss_challenge extends be_module {
 				// HCAPTCHA
 				$hcaptchaapisite = $options['hcaptchaapisite'];
 				$cap			  = "
-					<script src='https://hcaptcha.com/1/api.js' async defer></script>\r\n
+					<script src='https://hcaptcha.com/1/api.js' async defer></script>
 					<input type='hidden' name='h-captcha' value='h-captcha'>
 					<div class='h-captcha' data-sitekey='$hcaptchaapisite'></div>
 				";
@@ -311,9 +304,9 @@ class ss_challenge extends be_module {
 			case 'S':
 				$solvmediaapivchallenge = $options['solvmediaapivchallenge'];
 				$cap					= "
-					<script src='https://api-secure.solvemedia.com/papi/challenge.script?k=$solvmediaapivchallenge'></script>
+					<script src='https://api-secure.solvemedia.com/papi/challenge.script?k=" . esc_attr( $solvmediaapivchallenge ) . "'></script>
 					<noscript>
-					<iframe src='https://api-secure.solvemedia.com/papi/challenge.noscript?k=$solvmediaapivchallenge' height='300' width='500' frameborder='0'></iframe><br>
+					<iframe src='https://api-secure.solvemedia.com/papi/challenge.noscript?k=" . esc_attr( $solvmediaapivchallenge ) . "' height='300' width='500' frameborder='0'></iframe><br>
 					<textarea name='adcopy_challenge' rows='3' cols='40'></textarea>
 					<input type='hidden' name='adcopy_response' value='manual_challenge'>
 					</noscript><br>
@@ -322,8 +315,8 @@ class ss_challenge extends be_module {
 			case 'A':
 			case 'Y':
 				// arithmetic
-				$n1 = rand( 1, 9 );
-				$n2 = rand( 1, 9 );
+				$n1 = wp_rand( 1, 9 );
+				$n2 = wp_rand( 1, 9 );
 				// try a much more interesting way that can't be generalized
 				// use the "since" date from stats
 				$seed   = 5;
@@ -332,11 +325,11 @@ class ss_challenge extends be_module {
 					$seed = strtotime( $spdate );
 				}
 				$stupid = $n1 + $n2 - $seed;
-				$cap	= __( '
+				$cap	= '
 					<p>Enter the SUM of these two numbers: <span style="size:4em;font-weight:bold">' . $n1 . ' + ' . $n2 . '</span><br>
 					<input name="sum" value="" type="text">
 					<input type="hidden" name="nums" value="' . $stupid . '"><br>
-				', 'stop-spammer-registrations-plugin' );
+				';
 				break;
 			case 'F':
 			// future
@@ -346,12 +339,13 @@ class ss_challenge extends be_module {
 				$cap	= '';
 				break;
 		}
+		// phpcs:enable WordPress.WP.EnqueuedResources.NonEnqueuedScript
 		// have a display
 		// need to send it to the display
 		if ( empty( $msg ) ) {
-			$msg = html_entity_decode($rejectmessage);
-			$msg = str_replace('[ip]', $ip, $msg);
-			$msg = str_replace('[reason]', $post['reason'], $msg);
+			$msg = html_entity_decode( $rejectmessage );
+			$msg = str_replace( '[ip]', $ip, $msg );
+			$msg = str_replace( '[reason]', $post['reason'], $msg );
 		}
 		$ansa = "
 			$msg
@@ -362,7 +356,88 @@ class ss_challenge extends be_module {
 			$capbot
 			$formbot
 		";
-		wp_die( $ansa, "Stop Spammers", array( 'response' => 200 ) );
+		$allowed_html = array(
+			'form' => array(
+				'action' => true,
+				'method' => true,
+				'class' => true,
+				'id' => true,
+				'enctype' => true,
+				'novalidate' => true
+			),
+			'input' => array(
+				'type' => true,
+				'name' => true,
+				'id' => true,
+				'class' => true,
+				'value' => true,
+				'placeholder' => true,
+				'required' => true,
+				'pattern' => true,
+				'min' => true,
+				'max' => true,
+				'minlength' => true,
+				'maxlength' => true
+			),
+			'textarea' => array(
+				'name' => true,
+				'id' => true,
+				'class' => true,
+				'rows' => true,
+				'cols' => true,
+				'placeholder' => true,
+				'required' => true,
+				'style' => true
+			),
+			'select' => array(
+				'name' => true,
+				'id' => true,
+				'class' => true,
+				'required' => true
+			),
+			'option' => array(
+				'value' => true,
+				'selected' => true
+			),
+			'label' => array(
+				'for' => true,
+				'class' => true
+			),
+			'div' => array(
+				'class' => true,
+				'id' => true
+			),
+			'span' => array(
+				'class' => true,
+				'id' => true
+			),
+			'p' => array(
+				'class' => true,
+				'id' => true
+			),
+			'br' => array(),
+			'strong' => array(),
+			'em' => array(),
+			'h1' => array(),
+			'h2' => array(),
+			'h3' => array(),
+			'h4' => array(),
+			'h5' => array(),
+			'h6' => array(),
+			'script' => array(
+				'src' => true,
+				'async' => true,
+				'defer' => true
+			),
+			'noscript' => array(),
+			'iframe' => array(
+				'src' => true,
+				'height' => true,
+				'width' => true,
+				'frameborder' => true
+			)
+		);
+		wp_die( wp_kses( $ansa, $allowed_html ), "Stop Spammers", array( 'response' => 200 ) );
 		exit();
 	}
 
@@ -377,24 +452,24 @@ class ss_challenge extends be_module {
 		}
 		if ( array_key_exists( 'ke', $_POST ) && !empty( $_POST['ke'] ) ) {
 			// send wp_mail to sysop
-			$now = date( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
-			$ke  = sanitize_email( $_POST['ke'] );
+			$now = gmdate( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
+			$ke  = sanitize_email( wp_unslash( $_POST['ke'] ) );
 			if ( !is_email( $ke ) || empty( $ke ) ) {
 				return false;
 			}
-			$km = sanitize_text_field( $_POST['km'] );
+			$km = isset( $_POST['km'] ) ? sanitize_text_field( wp_unslash( $_POST['km'] ) ) : '';
 			if ( strlen( $km ) > 200 ) {
 				$km = substr( $km, 0, 197 ) . '...';
 			}
-			$kr = really_clean( sanitize_text_field( $_POST['kr'] ) );
+			$kr = isset( $_POST['kr'] ) ? really_clean( sanitize_text_field( wp_unslash( $_POST['kr'] ) ) ) : '';
 			$to = get_option( 'admin_email' );
 			if ( !empty( $wlreqmail ) ) {
 				$to = $wlreqmail;
 			}
-			$subject = __( 'Allow List Request from ', 'stop-spammer-registrations-plugin' ) . get_bloginfo( 'name' );
+			$subject = 'Allow List Request from ' . get_bloginfo( 'name' );
 			$ip	     = ss_get_ip();
-			$web 	 = __( 'Approve or Block Request: ', 'stop-spammer-registrations-plugin' ) . admin_url( 'admin.php?page=ss_allow_list' );
-			$message = __( "
+			$web 	 = 'Approve or Block Request: ' . admin_url( 'admin.php?page=ss_allow_list' );
+			$message = "
 				A request has been received from someone who has been marked as a spammer by the Stop Spammers plugin.
 
 				You are being notified because you have toggled on the option indicating that you wanted this email.
@@ -414,11 +489,11 @@ class ss_challenge extends be_module {
 				Some spam bots fill out the request form with a fake explanation.
 
 				— Stop Spammers
-			", 'stop-spammer-registrations-plugin' );
+			";
 			$message = str_replace( "\t", '', $message );
-			$headers = __( 'From: ', 'stop-spammer-registrations-plugin' ) . get_option( 'admin_email' ) . "\r\n";
+			$headers = 'From: ' . get_option( 'admin_email' ) . "\r\n";
 			wp_mail( $to, $subject, $message, $headers );
-			$rejectmessage = __( '<h2>Email sent. Thank you.</h2>', 'stop-spammer-registrations-plugin' );
+			$rejectmessage = '<h2>Email sent. Thank you.</h2>';
 			return true;
 		}
 	}
@@ -427,10 +502,10 @@ class ss_challenge extends be_module {
 		// add to the wlrequest option
 		// time, ip, email, author, reasion, info, sname
 		$sname = $this->getSname();
-		$now   = date( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
+		$now   = gmdate( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
 		$ke	   = "";
 		if ( array_key_exists( 'ke', $_POST ) ) {
-			$ke = sanitize_text_field( $_POST['ke'] ); // email
+			$ke = sanitize_text_field( wp_unslash( $_POST['ke'] ) ); // email
 		}
 		// sfs_debug_msg( "in add allow: '$ke'" );
 		if ( empty( $ke ) ) {
@@ -439,12 +514,12 @@ class ss_challenge extends be_module {
 		if ( !is_email( $ke ) ) {
 			return false;
 		}
-		$km  = really_clean( sanitize_text_field( $_POST['km'] ) ); // user message
+		$km = isset( $_POST['km'] ) ? really_clean( sanitize_text_field( wp_unslash( $_POST['km'] ) ) ) : ''; // user message
 		if ( strlen( $km ) > 80 ) {
 			$km = substr( $km, 0, 77 ) . '...';
 		}
-		$kr  = really_clean( sanitize_text_field( $_POST['kr'] ) ); // reason
-		$ka  = really_clean( sanitize_user( $_POST['ka'] ) ); // author
+		$kr = isset( $_POST['kr'] ) ? really_clean( sanitize_text_field( wp_unslash( $_POST['kr'] ) ) ) : ''; // reason
+		$ka = isset( $_POST['ka'] ) ? really_clean( sanitize_user( wp_unslash( $_POST['ka'] ) ) ) : ''; // author
 		$req = array( $ip, $ke, $ka, $kr, $km, $sname );
 		// add to the request list
 		$wlrequests = $stats['wlrequests'];

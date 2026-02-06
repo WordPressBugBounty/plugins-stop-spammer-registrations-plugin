@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class ss_check_post extends be_module {
@@ -249,7 +249,7 @@ class ss_check_post extends be_module {
 		// sfs_debug_msg( "check post $ip, " . print_r( $post,true ) );
 		// for testing the cache without doing spam
 		if ( array_key_exists( 'email', $post ) && $post['email'] == 'email@example.com' ) {
-			$post['reason'] = __( 'Testing Email (will always be blocked)', 'stop-spammer-registrations-plugin' ); // use to test plugin
+			$post['reason'] = 'Testing Email (will always be blocked)'; // use to test plugin
 			be_load( 'ss_challenge', ss_get_ip(), $stats, $options, $post );
 			return;
 		}
@@ -264,7 +264,6 @@ class ss_check_post extends be_module {
 			return false;
 		}
 		// here because we have a spammer that's been caught
-		$ss_check_sempahore = true;
 		ss_log_bad( ss_get_ip(), $reason, $chk );
 		exit;
 	}

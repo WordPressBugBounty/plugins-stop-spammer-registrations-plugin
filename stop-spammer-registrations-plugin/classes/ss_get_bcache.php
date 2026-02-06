@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class ss_get_bcache {
@@ -20,15 +20,15 @@ class ss_get_bcache {
 		$ajaxurl   = admin_url( 'admin-ajax.php' );
 		$show	   = '';
 		foreach ( $badips as $key => $value ) {
-			$who	 = "<a title=\"" . esc_attr__( 'Look Up WHOIS', 'stop-spammer-registrations-plugin' ) . "\" target=\"_stopspam\" href=\"https://whois.domaintools.com/$key\"><img src=\"$whois\" class=\"icon-action\"></a>";
-			$show   .= "<a href=\"https://www.stopforumspam.com/search?q=$key\" target=\"_stopspam\">$key: $value</a> ";
+			$who	 = "<a title=\"Look Up WHOIS\" target=\"_stopspam\" href=\"https://whois.domaintools.com/$key\"><img src=\"$whois\" class=\"icon-action\"></a>";
+			$show   .= "<a href=\"https://www.stopforumspam.com/search?q=$key\" target=\"_stopspam\">$key: $value</a>";
 			// try AJAX on the delete from bad cache
-			$onclick = "onclick=\"sfs_ajax_process('$key','$container','$cachedel','$ajaxurl');return false;\"";
-			$show   .= " <a href=\"\" $onclick title=\"" . esc_attr__( 'Delete $key from Cache', 'stop-spammer-registrations-plugin' ) . "\" alt=\"" . esc_attr__( 'Delete $key from Cache', 'stop-spammer-registrations-plugin' ) . "\" ><img src=\"$trash\" class=\"icon-action\"></a> ";
-			$onclick = "onclick=\"sfs_ajax_process('$key','$container','add_black','$ajaxurl');return false;\"";
-			$show   .= " <a href=\"\" $onclick title=\"" . esc_attr__( 'Add to $key Block List', 'stop-spammer-registrations-plugin' ) . "\" alt=\"" . esc_attr__( 'Add to Block List', 'stop-spammer-registrations-plugin' ) . "\" ><img src=\"$tdown\" class=\"icon-action\"></a> ";
-			$onclick = "onclick=\"sfs_ajax_process('$key','$container','add_white','$ajaxurl');return false;\"";
-			$show   .= " <a href=\"\" $onclick title=\"" . esc_attr__( 'Add to $key Allow List', 'stop-spammer-registrations-plugin' ) . "\" alt=\"" . esc_attr__( 'Add to Allow List', 'stop-spammer-registrations-plugin' ) . "\" ><img src=\"$tup\" class=\"icon-action\"></a>";
+			$onclick = "onclick=\"sfs_ajax_process('" . esc_js( $key ) . "','" . esc_js( $container ) . "','" . esc_js( $cachedel ) . "','" . esc_js( $ajaxurl ) . "');return false;\"";
+			$show   .= " <a href=\"\" $onclick title=\"Delete $key from Cache\" alt=\"Delete $key from Cache\" ><img src=\"$trash\" class=\"icon-action\"></a>";
+			$onclick = "onclick=\"sfs_ajax_process('" . esc_js( $key ) . "','" . esc_js( $container ) . "','add_black','" . esc_js( $ajaxurl ) . "');return false;\"";
+			$show   .= " <a href=\"\" $onclick title=\"Add to $key Block List\" alt=\"Add to Block List\" ><img src=\"$tdown\" class=\"icon-action\"></a>";
+			$onclick = "onclick=\"sfs_ajax_process('" . esc_js( $key ) . "','" . esc_js( $container ) . "','add_white','" . esc_js( $ajaxurl ) . "');return false;\"";
+			$show   .= " <a href=\"\" $onclick title=\"Add to $key Allow List\" alt=\"Add to Allow List\" ><img src=\"$tup\" class=\"icon-action\"></a>";
 			$show   .= $who;
 			$show   .= "<br>";
 		}

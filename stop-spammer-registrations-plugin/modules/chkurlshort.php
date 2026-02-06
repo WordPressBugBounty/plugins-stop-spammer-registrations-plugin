@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkurlshort {
@@ -15,7 +15,7 @@ class chkurlshort {
 			if ( !empty( $data ) ) {
 				foreach ( $blockurlshortners as $urlshort ) {
 					if ( stripos( $data, $urlshort ) !== false and ( stripos( $data, $urlshort ) == 0 or substr( $data, stripos( $data, $urlshort ) - 1, 1 ) == " " or substr( $data, stripos( $data, $urlshort ) - 1, 1 ) == "/" or substr( $data, stripos( $data, $urlshort ) - 1, 1 ) == "@" or substr( $data, stripos( $data, $urlshort ) - 1, 1 ) == "." ) ) {
-						return __( 'URL Shortener: ' . $urlshort . ' in ' . $key . '', 'stop-spammer-registrations-plugin' );
+						return 'URL Shortener: ' . $urlshort . ' in ' . $key;
 					}
 				}
 			}

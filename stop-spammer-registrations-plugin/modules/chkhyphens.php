@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkhyphens  extends be_module { 
@@ -12,7 +12,7 @@ class chkhyphens  extends be_module {
 			if ( !empty( $email ) ) {
 				$email = substr( $email, 0, strpos( $email, '@' ) );
 				if ( substr_count( $email, "-" ) > 1 ) {
-					return __( 'Too many hyphens in: ' . $email . '', 'stop-spammer-registrations-plugin' );
+					return 'Too many hyphens in: ' . $email;
 				}
 			}
 		}
@@ -21,7 +21,7 @@ class chkhyphens  extends be_module {
 			if ( !empty( $email ) ) {
 				$email = substr( $email, 0, strpos( $email, '@' ) );
 				if ( substr_count( $email, "-" ) > 1 ) {
-					return __( 'Too many hyphens in: ' . $email . '', 'stop-spammer-registrations-plugin' );
+					return 'Too many hyphens in: ' . $email;
 				}
 			}
 		}

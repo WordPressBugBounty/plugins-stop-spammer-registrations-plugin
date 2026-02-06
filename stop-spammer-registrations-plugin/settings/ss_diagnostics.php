@@ -1,19 +1,19 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 $stats   = ss_get_stats();
 $options = ss_get_options();
 
 if ( !current_user_can( 'manage_options' ) ) {
-	die( __( 'Access Blocked', 'stop-spammer-registrations-plugin' ) );
+	die( 'Access Blocked' );
 }
 
 ss_fix_post_vars();
-$now = date( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
+$now = gmdate( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
 
 // for session speed checks
 // if ( !isset( $_POST ) || empty( $_POST ) ) { // no post defined
@@ -26,7 +26,7 @@ $ip  = ss_get_ip();
 $hip = "unknown";
 
 if ( array_key_exists( 'SERVER_ADDR', $_SERVER ) ) {
-	$hip = $_SERVER["SERVER_ADDR"];
+	$hip = sanitize_text_field( wp_unslash( $_SERVER["SERVER_ADDR"] ) );
 }
 
 $email   = '';
@@ -34,26 +34,28 @@ $author  = '';
 $subject = '';
 $body	 = '';
 
+// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Test form input for diagnostics, nonce verified when actions are performed
 if ( array_key_exists( 'ip', $_POST ) ) {
 	if ( filter_var( $_POST['ip'], FILTER_VALIDATE_IP ) ) {
-		$ip = sanitize_text_field( $_POST['ip'] );
+		$ip = sanitize_text_field( wp_unslash( $_POST['ip'] ) );
 	}
 }
+// phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
 
 if ( array_key_exists( 'email', $_POST ) ) {
-	$email = sanitize_email( $_POST['email'] );
+	$email = sanitize_email( wp_unslash( $_POST['email'] ) );
 }
 
 if ( array_key_exists( 'author', $_POST ) ) {
-	$author = sanitize_text_field( $_POST['author'] );
+	$author = sanitize_text_field( wp_unslash( $_POST['author'] ) );
 }
 
 if ( array_key_exists( 'subject', $_POST ) ) {
-	$subject = sanitize_text_field( $_POST['subject'] );
+	$subject = sanitize_text_field( wp_unslash( $_POST['subject'] ) );
 }
 
 if ( array_key_exists( 'body', $_POST ) ) {
-	$body = sanitize_textarea_field( $_POST['body'] );
+	$body = sanitize_textarea_field( wp_unslash( $_POST['body'] ) );
 }
 
 $nonce = wp_create_nonce( 'ss_stopspam_update' );
@@ -61,30 +63,30 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 ?>
 
 <div id="ss-plugin" class="wrap">
-	<h1 class="ss_head">Stop Spammers — <?php _e( 'Diagnostics & Threat Scan', 'stop-spammer-registrations-plugin' ); ?></h1>
+	<h1 class="ss_head"><img src="<?php echo esc_url( plugin_dir_url( dirname( __FILE__ ) ) . 'images/stop-spammers-icon.png' ); ?>" class="ss_icon">Diagnostics & Threat Scan</h1>
 	<form method="post" action="">
 		<div class="ss_info_box">
 			<input type="hidden" name="action" value="update">
-			<input type="hidden" name="ss_stop_spammers_control" value="<?php echo $nonce; ?>">
-			<div class="mainsection"><?php _e( 'Option Testing', 'stop-spammer-registrations-plugin' ); ?>
-				<sup class="ss_sup"><a href="https://github.com/bhadaway/stop-spammers/wiki/Docs:-Diagnostics-&-Threat-Scan#option-testing" target="_blank">?</a></sup>
+			<input type="hidden" name="ss_stop_spammers_control" value="<?php echo esc_attr( $nonce ); ?>">
+			<div class="mainsection">Option Testing
+				<sup class="ss_sup"><a href="https://github.com/webguyio/stop-spammers/wiki/Docs:-Diagnostics-&-Threat-Scan#option-testing" target="_blank">?</a></sup>
 			</div>
-			<?php _e( '<p>Run the settings against an IP address to see the results.</p>IP Address:<br>', 'stop-spammer-registrations-plugin' ); ?>
+			<p>Run the settings against an IP address to see the results.</p>IP Address:<br>
 			<input id="ssinput" name="ip" type="text" value="<?php echo esc_attr( $ip ); ?>">
-			<?php _e( '(Your server address is', 'stop-spammer-registrations-plugin' ); ?> <?php echo $hip; ?>)<br><br>
-			<?php _e( 'Email:', 'stop-spammer-registrations-plugin' ); ?><br>
+			(Your server address is <?php echo esc_html( $hip ); ?>)<br><br>
+			Email:<br>
 			<input id="ssinput" name="email" type="text" value="<?php echo esc_attr( $email ); ?>"><br><br>
-			<?php _e( 'Author/User:', 'stop-spammer-registrations-plugin' ); ?><br>
+			Author/User:<br>
 			<input id="ssinput" name="author" type="text" value="<?php echo esc_attr( $author ); ?>"><br><br>
-			<?php _e( 'Subject:', 'stop-spammer-registrations-plugin' ); ?><br>
+			Subject:<br>
 			<input id="ssinput" name="subject" type="text" value="<?php echo esc_attr( $subject ); ?>"><br><br>
-			<?php _e( 'Comment:', 'stop-spammer-registrations-plugin' ); ?><br>
-			<textarea name="body"><?php _e( $body ); ?></textarea><br>
+			Comment:<br>
+			<textarea name="body"><?php echo esc_html( $body ); ?></textarea><br>
 			<div style="width:50%;float:left">
-				<p class="submit"><input name="testopt" class="button-primary" value="<?php _e( 'Test Options', 'stop-spammer-registrations-plugin' ); ?>" type="submit"></p>
+				<p class="submit"><input name="testopt" class="button-primary" value="Test Options" type="submit"></p>
 			</div>
 			<div style="width:50%;float:right">
-				<p class="submit"><input name="testcountry" class="button-primary" value="<?php _e( 'Test Countries', 'stop-spammer-registrations-plugin' ); ?>" type="submit"></p>
+				<p class="submit"><input name="testcountry" class="button-primary" value="Test Countries" type="submit"></p>
 			</div>
 			<br style="clear:both">
 			<?php
@@ -92,7 +94,7 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 			$nonce = '';
 
 			if ( array_key_exists( 'ss_stop_spammers_control', $_POST ) ) {
-					$nonce = $_POST['ss_stop_spammers_control'];
+					$nonce = sanitize_text_field( wp_unslash( $_POST['ss_stop_spammers_control'] ) );
 			}
 
 			if ( !empty( $nonce ) && wp_verify_nonce( $nonce, 'ss_stopspam_update' ) ) {
@@ -118,14 +120,14 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 					);
 					$m1 = memory_get_usage( true );
 					$m2 = memory_get_peak_usage( true );
-					_e( '<br>Memory Used: ' . $m1 . ' Peak: ' . $m2 . '<br>', 'stop-spammer-registrations-plugin' );
-					_e( '<ul>Allow Checks<br>', 'stop-spammer-registrations-plugin' );
+					echo '<br>Memory Used: ' . esc_html( $m1 ) . ' Peak: ' . esc_html( $m2 ) . '<br>';
+					echo '<ul>Allow Checks<br>';
 					foreach ( $optionlist as $chk ) {
 						$ansa = be_load( $chk, $ip, $stats, $options, $post );
 						if ( empty( $ansa ) ) {
 							$ansa = 'OK';
 						}
-						echo "$chk: $ansa<br>";
+						echo wp_kses_post( "$chk: $ansa<br>" );
 					}
 					echo "</ul>";
 					$optionlist = array(
@@ -163,14 +165,14 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 					);
 					$m1 = memory_get_usage( true );
 					$m2 = memory_get_peak_usage( true );
-					_e( '<br>Memory Used: ' . $m1 . ' Peak: ' . $m2 . '<br>', 'stop-spammer-registrations-plugin' );
-					_e( '<ul>Block Checks<br>', 'stop-spammer-registrations-plugin' );
+					echo '<br>Memory Used: ' . esc_html( $m1 ) . ' Peak: ' . esc_html( $m2 ) . '<br>';
+					echo '<ul>Block Checks<br>';
 					foreach ( $optionlist as $chk ) {
 						$ansa = be_load( $chk, $ip, $stats, $options, $post );
 						if ( empty( $ansa ) ) {
 							$ansa = 'OK';
 						}
-						echo "$chk: $ansa<br>";
+						echo wp_kses_post( "$chk: $ansa<br>" );
 					}
 					echo "</ul>";
 					$optionlist = array();
@@ -186,13 +188,13 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 								$ansa = 'OK';
 							}
 							$nm = $chk[1];
-							echo "$nm: $ansa<br>";
+							echo wp_kses_post( "$nm: $ansa<br>" );
 						}
 						echo "</ul>";
 					}
 					$m1 = memory_get_usage( true );
 					$m2 = memory_get_peak_usage( true );
-					_e( '<br>Memory Used: ' . $m1 . ' Peak: ' . $m2 . '<br>', 'stop-spammer-registrations-plugin' );
+					echo '<br>Memory Used: ' . esc_html( $m1 ) . ' Peak: ' . esc_html( $m2 ) . '<br>';
 				}
 				if ( array_key_exists( 'testcountry', $_POST ) ) {
 					$optionlist = array(
@@ -342,39 +344,39 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 					// SC - Seychelles
 					$m1 = memory_get_usage( true );
 					$m2 = memory_get_peak_usage( true );
-					_e( '<br>Memory Used: ' . $m1 . ' Peak: ' . $m2 . '<br>', 'stop-spammer-registrations-plugin' );
+					echo '<br>Memory Used: ' . esc_html( $m1 ) . ' Peak: ' . esc_html( $m2 ) . '<br>';
 					foreach ( $optionlist as $chk ) {
 						$ansa = be_load( $chk, $ip, $stats, $options, $post );
 						if ( empty( $ansa ) ) {
 							$ansa = 'OK';
 						}
-						echo "$chk: $ansa<br>";
+						echo wp_kses_post( "$chk: $ansa<br>" );
 					}
 					$m1 = memory_get_usage( true );
 					$m2 = memory_get_peak_usage( true );
-					_e( '<br>Memory Used: ' . $m1 . ' Peak: ' . $m2 . '<br>', 'stop-spammer-registrations-plugin' );
+					echo '<br>Memory Used: ' . esc_html( $m1 ) . ' Peak: ' . esc_html( $m2 ) . '<br>';
 				}
 			}
 			?>
 		</div>
 		<div class="ss_info_box">
-			<div class="mainsection"><?php _e( 'Information Display', 'stop-spammer-registrations-plugin' ); ?>
-				<sup class="ss_sup"><a href="https://github.com/bhadaway/stop-spammers/wiki/Docs:-Diagnostics-&-Threat-Scan#information-display" target="_blank">?</a></sup>
+			<div class="mainsection">Information Display
+				<sup class="ss_sup"><a href="https://github.com/webguyio/stop-spammers/wiki/Docs:-Diagnostics-&-Threat-Scan#information-display" target="_blank">?</a></sup>
 			</div>
 			<div style="width:50%;float:left">
-				<h2><?php _e( 'Display All Options', 'stop-spammer-registrations-plugin' ); ?></h2>
-				<p><?php _e( 'You can dump all options here (useful for debugging):', 'stop-spammer-registrations-plugin' ); ?></p>
-				<p class="submit"><input name="dumpoptions" class="button-primary" value="<?php _e( 'Dump Options', 'stop-spammer-registrations-plugin' ); ?>" type="submit"></p>
+				<h2>Display All Options</h2>
+				<p>You can dump all options here (useful for debugging):</p>
+				<p class="submit"><input name="dumpoptions" class="button-primary" value="Dump Options" type="submit"></p>
 			</div>
 			<div style="width:50%;float:right">
-				<h2><?php _e( 'Display All Stats', 'stop-spammer-registrations-plugin' ); ?></h2>
-				<p><?php _e( 'You can dump all stats here: ', 'stop-spammer-registrations-plugin' ); ?></p>
-				<p class="submit"><input name="dumpstats" class="button-primary" value="<?php _e( 'Dump Stats', 'stop-spammer-registrations-plugin' ); ?>" type="submit"></p>
+				<h2>Display All Stats</h2>
+				<p>You can dump all stats here:</p>
+				<p class="submit"><input name="dumpstats" class="button-primary" value="Dump Stats" type="submit"></p>
 			</div>
 			<br style="clear:both">
 			<?php
 			if ( array_key_exists( 'ss_stop_spammers_control', $_POST ) ) {
-				$nonce = $_POST['ss_stop_spammers_control'];
+				$nonce = sanitize_text_field( wp_unslash( $_POST['ss_stop_spammers_control'] ) );
 			}
 			if ( !empty( $nonce ) && wp_verify_nonce( $nonce, 'ss_stopspam_update' ) ) {
 				if ( array_key_exists( 'dumpoptions', $_POST ) ) { ?>
@@ -384,9 +386,10 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 					$options = ss_get_options();
 					foreach ( $options as $key => $val ) {
 						if ( is_array( $val ) ) {
+							// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- Intentional diagnostic output for admin
 							$val = print_r( $val, true );
 						}
-						echo "<strong>&bull; $key</strong> = $val\r\n";
+						echo wp_kses_post( "<strong>&bull; $key</strong> = $val\r\n" );
 					}
 					echo "\r\n";
 					echo '</pre>';
@@ -396,7 +399,7 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 			?>
 			<?php
 			if ( array_key_exists( 'ss_stop_spammers_control', $_POST ) ) {
-				$nonce = $_POST['ss_stop_spammers_control'];
+				$nonce = sanitize_text_field( wp_unslash( $_POST['ss_stop_spammers_control'] ) );
 			}
 			if ( !empty( $nonce ) && wp_verify_nonce( $nonce, 'ss_stopspam_update' ) ) {
 				if ( array_key_exists( 'dumpstats', $_POST ) ) { ?>
@@ -406,9 +409,10 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 					echo "\r\n";
 					foreach ( $stats as $key => $val ) {
 						if ( is_array( $val ) ) {
+							// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- Intentional diagnostic output for admin
 							$val = print_r( $val, true );
 						}
-						echo "<strong>&bull; $key</strong> = $val\r\n";
+						echo wp_kses_post( "<strong>&bull; $key</strong> = $val\r\n" );
 					}
 					echo "\r\n";
 					echo '</pre>';
@@ -420,18 +424,18 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 		</div>
 	</form>
 	<div class="ss_info_box">
-		<div class="mainsection"><?php _e( 'Debugging', 'stop-spammer-registrations-plugin' ); ?></div>
+		<div class="mainsection">Debugging</div>
 		<?php
 		// if there is a log file we can display it here
-		$dfile = SS_PLUGIN_DATA . '.sfs_debug_output.txt';
+		$dfile = SS_PLUGIN_DATA . 'debug.txt';
 		if ( file_exists( $dfile ) ) {
 			if ( array_key_exists( 'ss_stop_spammers_control', $_POST ) ) {
-				$nonce = $_POST['ss_stop_spammers_control'];
+				$nonce = sanitize_text_field( wp_unslash( $_POST['ss_stop_spammers_control'] ) );
 			}
 			if ( !empty( $nonce ) && wp_verify_nonce( $nonce, 'ss_stopspam_update' ) ) {
 				if ( array_key_exists( 'killdebug', $_POST ) ) {
 					$f = unlink( $dfile );
-					_e( '<p>File Deleted<p>', 'stop-spammer-registrations-plugin' );
+					echo '<p>File Deleted<p>';
 				}
 			}
 		}
@@ -441,13 +445,15 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 			$to	   = get_option( 'admin_email' );
 			$f	   = file_get_contents( $dfile );
 			$ff	   = wordwrap( $f, 70, "\r\n" );
+		} else {
+			$f = '';
 		}
 		if ( array_key_exists( 'ss_stop_spammers_control', $_POST ) ) {
-			$nonce = $_POST['ss_stop_spammers_control'];
+			$nonce = sanitize_text_field( wp_unslash( $_POST['ss_stop_spammers_control'] ) );
 		}
 		if ( !empty( $nonce ) && wp_verify_nonce( $nonce, 'ss_stopspam_update' ) ) {
 			if ( array_key_exists( 'showdebug', $_POST ) ) {
-				_e( '<p><strong>Debug Output:</strong></p><pre>$f</pre><p><strong>end of file (if empty, there are no errors to display)</p></strong>', 'stop-spammer-registrations-plugin' );
+				echo wp_kses_post( "<p><strong>Debug Output:</strong></p><pre>$f</pre><p><strong>end of file (if empty, there are no errors to display)</p></strong>" );
 			}
 		}
 		$nonce = wp_create_nonce( 'ss_stopspam_update' );
@@ -455,51 +461,87 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 		<div style="width:50%;float:left">
 			<form method="post" action="">
 				<input type="hidden" name="update_options" value="update">
-				<input type="hidden" name="ss_stop_spammers_control" value="<?php echo $nonce; ?>">
-				<p class="submit"><input class="button-primary" name="showdebug" value="<?php _e( 'Show Debug File', 'stop-spammer-registrations-plugin' ); ?>" type="submit"></p>
+				<input type="hidden" name="ss_stop_spammers_control" value="<?php echo esc_html( $nonce ); ?>">
+				<p class="submit"><input class="button-primary" name="showdebug" value="Show Debug File" type="submit"></p>
 			</form>
 		</div>
 		<div style="width:50%;float:right">
 			<form method="post" action="">
 				<input type="hidden" name="update_options" value="update">
-				<input type="hidden" name="ss_stop_spammers_control" value="<?php echo $nonce; ?>">
-				<p class="submit"><input class="button-primary" name="killdebug" value="<?php _e( 'Delete Debug File', 'stop-spammer-registrations-plugin' ); ?>" type="submit"></p>
+				<input type="hidden" name="ss_stop_spammers_control" value="<?php echo esc_html( $nonce ); ?>">
+				<p class="submit"><input class="button-primary" name="killdebug" value="Delete Debug File" type="submit"></p>
 			</form>
 		</div>
 	<br style="clear:both">
 	</div>
 	<?php
-	$ini  = '';
-	$pinf = true;
-	$ini  = @ini_get( 'disable_functions' );
-	if ( !empty( $ini ) ) {
-		$disabled = explode( ',', $ini );
-		if ( is_array( $disabled ) && in_array( 'phpinfo', $disabled ) ) {
-			$pinf = false;
-		}
-	}
+	$ini  = function_exists( 'ini_get' ) ? ini_get( 'disable_functions' ) : '';
+	$pinf = empty( $ini ) || !in_array( 'phpinfo', explode( ',', $ini ) );
 	if ( $pinf ) { ?>
-		<a href="" onclick="document.getElementById('shpinf').style.display='block';return false;" class="button-primary"><?php _e( 'Show PHP Info', 'stop-spammer-registrations-plugin' ); ?></a>
+		<a href="#phpinfo" onclick="togglePhpInfo(); return false;" class="button-primary">Show PHP Info</a>
+		<div id="phpinfo" class="phpinfodisplay" style="display:none">
 		<?php
 		ob_start();
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_phpinfo -- Intentional diagnostic tool for admin use only, protected by manage_options capability
 		phpinfo();
-		preg_match( '%<style type="text/css">(.*?)</style>.*?(<body>.*</body>)%s', ob_get_clean(), $matches );
-		# $matches [1]; # Style information
-		# $matches [2]; # Body information
-		echo "<div class='phpinfodisplay' id=\"shpinf\" style=\"display:none;\"><style type='text/css'>\n",
-		join( "\n",
-			array_map(
-				function($i) {
-					return ".phpinfodisplay " . preg_replace( "/,/", ",.phpinfodisplay ", $i );
-				},
-				preg_split( '/\n/', $matches[1] )
-			)
-		),
-		"</style>\n",
-		$matches[2],
-		"\n</div>\n";
-	}
-	?>
+		$phpinfo = ob_get_clean();
+		preg_match( '%<style type="text/css">(.*?)</style>.*?(<body>.*</body>)%s', $phpinfo, $matches );
+		if ( isset( $matches[1] ) && isset( $matches[2] ) ) {
+			echo wp_kses(
+				"<style type=\"text/css\">\n
+					#phpinfo{max-width:100%}
+					#phpinfo pre{margin:0;font-family:monospace}
+					#phpinfo a:link{color:#009;text-decoration:none;background-color:#fff}
+					#phpinfo a:hover{text-decoration:underline}
+					#phpinfo table{border-collapse:collapse;border:0;width:100%;box-shadow:1px 2px 3px #ccc}
+					#phpinfo .center{text-align:center}
+					#phpinfo .center table{margin:1em auto;text-align:left}
+					#phpinfo .center th{text-align:center !important}
+					#phpinfo td, th{border:1px solid #666;font-size:75%;vertical-align:baseline;padding:10px}
+					#phpinfo h1{font-size:150%}
+					#phpinfo h2{font-size:125%}
+					#phpinfo .p{text-align:left}
+					#phpinfo .e{background-color:#ccf;max-width:300px;font-weight:bold}
+					#phpinfo .h{background-color:#99c;font-weight:bold}
+					#phpinfo .v{background-color:#ddd;max-width:300px;overflow-x:auto;word-wrap:break-word}
+					#phpinfo .v i{color:#999}
+					#phpinfo img{float:right;border:0}
+					#phpinfo hr{width:100%;background-color:#ccc;border:0;height:1px}
+				</style>\n" .
+				$matches[2],
+				array(
+					'style' => array( 'type' => array() ),
+					'div'   => array( 'class' => array(), 'id' => array(), 'style' => array() ),
+					'h1'    => array( 'class' => array(), 'id' => array() ),
+					'h2'    => array( 'class' => array(), 'id' => array() ),
+					'h3'    => array( 'class' => array(), 'id' => array() ),
+					'h4'    => array( 'class' => array(), 'id' => array() ),
+					'h5'    => array( 'class' => array(), 'id' => array() ),
+					'h6'    => array( 'class' => array(), 'id' => array() ),
+					'p'     => array( 'class' => array(), 'id' => array() ),
+					'table' => array( 'class' => array(), 'id' => array() ),
+					'tr'    => array( 'class' => array(), 'id' => array() ),
+					'td'    => array( 'class' => array(), 'id' => array() ),
+					'th'    => array( 'class' => array(), 'id' => array() ),
+					'ul'    => array( 'class' => array(), 'id' => array() ),
+					'ol'    => array( 'class' => array(), 'id' => array() ),
+					'li'    => array( 'class' => array(), 'id' => array() ),
+					'a'     => array( 'href' => array(), 'title' => array(), 'class' => array(), 'id' => array() ),
+				)
+			);
+		}
+		?>
+		</div>
+		<?php
+		wp_register_script( 'ss-phpinfo', '', array(), SS_VERSION, true );
+		wp_enqueue_script( 'ss-phpinfo' );
+		wp_add_inline_script( 'ss-phpinfo', '
+			function togglePhpInfo() {
+				var phpInfoDiv = document.getElementById("phpinfo");
+				phpInfoDiv.style.display = (phpInfoDiv.style.display === "none" || phpInfoDiv.style.display === "") ? "block" : "none";
+			}
+		' );
+	} ?>
 	<?php
 	ss_fix_post_vars();
 	global $wpdb;
@@ -508,7 +550,7 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 	$runscan = false;
 	$nonce   = '';
 	if ( array_key_exists( 'ss_stop_spammers_control', $_POST ) ) {
-		$nonce = $_POST['ss_stop_spammers_control'];
+		$nonce = sanitize_text_field( wp_unslash( $_POST['ss_stop_spammers_control'] ) );
 	}
 	if ( !empty( $nonce ) && wp_verify_nonce( $nonce, 'ss_stopspam_update' ) ) {
 		if ( array_key_exists( 'update_options', $_POST ) ) {
@@ -518,449 +560,386 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 	$nonce = wp_create_nonce( 'ss_stopspam_update' );
 	?>
 	<div class="ss_info_box">
-		<div class="mainsection"><?php _e( 'Threat Scan', 'stop-spammer-registrations-plugin' ); ?>
-			<sup class="ss_sup"><a href="https://github.com/bhadaway/stop-spammers/wiki/Docs:-Diagnostics-&-Threat-Scan#threat-scan" target="_blank">?</a></sup>
+		<div class="mainsection">Threat Scan
+			<sup class="ss_sup"><a href="https://github.com/webguyio/stop-spammers/wiki/Docs:-Diagnostics-&-Threat-Scan#threat-scan" target="_blank">?</a></sup>
 		</div>
-		<?php _e( '<p>A very simple scan that looks for things out of place in the content directory as well as the database.</p>', 'stop-spammer-registrations-plugin' ); ?>
-		<form method="post" action="">
+		<p>A very simple scan that looks for things out of place in the content directory as well as the database.</p>
+		<form method="post" action="#scan">
 			<input type="hidden" name="update_options" value="update">
-			<input type="hidden" name="ss_stop_spammers_control" value="<?php echo $nonce; ?>">
-			<p class="submit"><input class="button-primary" value="<?php _e( 'Run Scan', 'stop-spammer-registrations-plugin' ); ?>" type="submit"></p>
+			<input type="hidden" name="ss_stop_spammers_control" value="<?php echo esc_html( $nonce ); ?>">
+			<p id="scan" class="submit"><input class="button-primary" value="Run Scan" type="submit"></p>
 		</form>
 	</div>
 	<?php if ( $runscan ) { ?>
-		<h2><?php _e( 'A clean scan does not mean you are safe. Please keep regular backups and ensure your installation up-to-date!', 'stop-spammer-registrations-plugin' ); ?></h2>
+		<h2>A clean scan does not mean you are safe. Please keep regular backups and ensure your installation up-to-date!</h2>
 		<hr>
 		<?php
 		$disp = false;
 		flush();
 		// lets try the posts - looking for script tags in data
-		_e( '<br><br>Testing Posts<br>', 'stop-spammer-registrations-plugin' );
+		echo '<br><br>Testing Posts<br>';
 		$ptab = $pre . 'posts';
-		$sql  = "select ID,post_author,post_title,post_name,guid,post_content,post_mime_type
-			from $ptab where 
-			INSTR(LCASE(post_author), '<script') +
-			INSTR(LCASE(post_title), '<script') +
-			INSTR(LCASE(post_name), '<script') +
-			INSTR(LCASE(guid), '<script') +
-			INSTR(LCASE(post_author), 'eval(') +
-			INSTR(LCASE(post_title), 'eval(') +
-			INSTR(LCASE(post_name), 'eval(') +
-			INSTR(LCASE(guid), 'eval(') +
-			INSTR(LCASE(post_content), 'eval(') +
-			INSTR(LCASE(post_author), 'eval (') +
-			INSTR(LCASE(post_title), 'eval (') +
-			INSTR(LCASE(post_name), 'eval (') +
-			INSTR(LCASE(guid), 'eval (') +
-			INSTR(LCASE(post_content), 'eval (') +
-			INSTR(LCASE(post_content), 'document.write(unescape(') +
-			INSTR(LCASE(post_content), 'try{window.onload') +
-			INSTR(LCASE(post_content), 'setAttribute(\'src\'') +
-			INSTR(LCASE(post_mime_type), 'script') > 0
+		// suspicious patterns to search
+		$suspicious_patterns = [
+			'<script',
+			'eval(',
+			'eval (',
+			'document.write(unescape(',
+			'try{window.onload',
+			'setAttribute(\'src\''
+		];
+		// prepare the SQL query with placeholders
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $ptab is $wpdb->prefix which is safe
+		$sql = "
+			SELECT ID, post_author, post_title, post_name, guid, post_content, post_mime_type
+			FROM $ptab
+			WHERE (
+				LOWER(post_author) LIKE %s OR
+				LOWER(post_title) LIKE %s OR
+				LOWER(post_name) LIKE %s OR
+				LOWER(guid) LIKE %s OR
+				LOWER(post_content) LIKE %s OR
+				LOWER(post_mime_type) LIKE %s
+			)
 		";
-		$sql = str_replace( "\t", '', $sql );
-		flush();
-		$myrows = $wpdb->get_results( $sql );
+		// prepare bind parameters
+		$bind_params = [];
+		foreach ( $suspicious_patterns as $pattern ) {
+			$bind_params = array_merge(
+				$bind_params,
+				array_fill( 0, 6, '%' . $wpdb->esc_like( strtolower( $pattern ) ) . '%' )
+			);
+		}
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query is prepared with wpdb->prepare(), $ptab is $wpdb->prefix which is safe
+		$query = $wpdb->prepare(
+			$sql,
+			$bind_params[0],
+			$bind_params[1],
+			$bind_params[2],
+			$bind_params[3],
+			$bind_params[4],
+			$bind_params[5]
+		);
+		$myrows = $wpdb->get_results( $query );
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		if ( $myrows ) {
 			foreach ( $myrows as $myrow ) {
-				$disp   = true;
+				$disp = true;
 				$reason = '';
-				if ( strpos( strtolower( $myrow->post_author ), '<script' ) !== false ) {
-					$reason .= "post_author:&lt;script ";
+				// check each suspicious pattern in different fields
+				foreach ( $suspicious_patterns as $pattern ) {
+					if (
+						stripos( $myrow->post_author, $pattern ) !== false ||
+						stripos( $myrow->post_title, $pattern ) !== false ||
+						stripos( $myrow->post_name, $pattern ) !== false ||
+						stripos( $myrow->guid, $pattern ) !== false ||
+						stripos( $myrow->post_content, $pattern ) !== false ||
+						stripos( $myrow->post_mime_type, $pattern ) !== false
+					) {
+						$reason .= "Found: " . esc_html( $pattern ) . " ";
+					}
 				}
-				if ( strpos( strtolower( $myrow->post_title ), '<script' ) !== false ) {
-					$reason .= "post_title:&lt;script ";
+				if ( !empty( $reason ) ) {
+					echo 'Found possible problems in post (<span style="color:red">' . esc_html( $reason ) . '</span>) ID: ' . esc_html( $myrow->ID ) . '<br>';
 				}
-				if ( strpos( strtolower( $myrow->post_name ), '<script' ) !== false ) {
-					$reason .= "post_name:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->guid ), '<script' ) !== false ) {
-					$reason .= "guid:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->post_author ), 'eval(' ) !== false ) {
-					$reason .= "post_author:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->post_title ), 'eval(' ) !== false ) {
-					$reason .= "post_title:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->post_name ), 'eval(' ) !== false ) {
-					$reason .= "post_name:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->guid ), 'eval(' ) !== false ) {
-					$reason .= "guid:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->post_content ), 'eval(' ) !== false ) {
-					$reason .= "post_content:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->post_author ), 'eval (' ) !== false ) {
-					$reason .= "post_author:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->post_title ), 'eval (' ) !== false ) {
-					$reason .= "post_title:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->post_name ), 'eval (' ) !== false ) {
-					$reason .= "post_name:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->guid ), 'eval (' ) !== false ) {
-					$reason .= "guid:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->post_content ), 'eval (' ) !== false ) {
-					$reason .= "post_content:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->post_content ), 'document.write(unescape(' ) !== false ) {
-					$reason .= "post_content:document.write(unescape( ";
-				}
-				if ( strpos( strtolower( $myrow->post_content ), 'try{window.onload' ) !== false ) {
-					$reason .= "post_content:try{window.onload ";
-				}
-				if ( strpos( strtolower( $myrow->post_content ), "setAttribute('src'" ) !== false ) {
-					$reason .= "post_content:setAttribute('src' ";
-				}
-				if ( strpos( strtolower( $myrow->post_mime_type ), 'script' ) !== false ) {
-					$reason .= "post_mime_type:script ";
-				}
-				_e( 'found possible problems in post (' . $reason . ') ID: ', 'stop-spammer-registrations-plugin' ) . $myrow->ID . '<br>';
 			}
 		} else {
-			_e( '<br>Nothing found in posts.<br>', 'stop-spammer-registrations-plugin' );
+			echo '<br>No suspicious patterns found in posts.<br>';
 			$disp = false;
 		}
 		echo '<hr>';
 		// comments: comment_ID: author_url, comment_agent, comment_author, comment_email
 		$ptab = $pre . 'comments';
-		_e( '<br><br>Testing Comments<br>', 'stop-spammer-registrations-plugin' );
+		echo '<br><br>Testing Comments<br>';
 		flush();
-		$sql = "select comment_ID,comment_author_url,comment_agent,comment_author,comment_author_email,comment_content
-			from $ptab where 
-			INSTR(LCASE(comment_author_url), '<script') +
-			INSTR(LCASE(comment_agent), '<script') +
-			INSTR(LCASE(comment_author), '<script') +
-			INSTR(LCASE(comment_author_email), '<script') +
-			INSTR(LCASE(comment_author_url), 'eval(') +
-			INSTR(LCASE(comment_agent), 'eval(') +
-			INSTR(LCASE(comment_author), 'eval(') +
-			INSTR(LCASE(comment_author_email), 'eval(') +
-			INSTR(LCASE(comment_author_url), 'eval (') +
-			INSTR(LCASE(comment_agent), 'eval (') +
-			INSTR(LCASE(comment_author), 'eval (') +
-			INSTR(LCASE(comment_author_email), 'eval (') +
-			INSTR(LCASE(comment_content), '<script') +
-			INSTR(LCASE(comment_content), 'eval(') +
-			INSTR(LCASE(comment_content), 'eval (') +
-			INSTR(LCASE(comment_content), 'document.write(unescape(') +
-			INSTR(LCASE(comment_content), 'try{window.onload') +
-			INSTR(LCASE(comment_content), 'setAttribute(\'src\'') +
-			INSTR(LCASE(comment_author_url), 'javascript:') >0
+		// suspicious patterns to search
+		$suspicious_patterns = [
+			'<script',
+			'eval(',
+			'eval (',
+			'document.write(unescape(',
+			'try{window.onload',
+			'setAttribute(\'src\'',
+			'javascript:'
+		];
+		// prepare the SQL query with placeholders
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $ptab is $wpdb->prefix which is safe
+		$sql = "
+			SELECT comment_ID, comment_author_url, comment_agent, comment_author, comment_author_email, comment_content
+			FROM $ptab
+			WHERE (
+				LOWER(comment_author_url) LIKE %s OR
+				LOWER(comment_agent) LIKE %s OR
+				LOWER(comment_author) LIKE %s OR
+				LOWER(comment_author_email) LIKE %s OR
+				LOWER(comment_content) LIKE %s
+			)
 		";
-		$sql = str_replace( "\t", '', $sql );
-		$myrows = $wpdb->get_results( $sql );
+		// prepare bind parameters
+		$bind_params = [];
+		foreach ( $suspicious_patterns as $pattern ) {
+			$bind_params = array_merge(
+				$bind_params,
+				array_fill( 0, 5, '%' . $wpdb->esc_like( strtolower( $pattern ) ) . '%' )
+			);
+		}
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query is prepared with wpdb->prepare(), $ptab is $wpdb->prefix which is safe
+		$query = $wpdb->prepare(
+			$sql,
+			$bind_params[0],
+			$bind_params[1],
+			$bind_params[2],
+			$bind_params[3],
+			$bind_params[4]
+		);
+		$myrows = $wpdb->get_results( $query );
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		if ( $myrows ) {
 			foreach ( $myrows as $myrow ) {
-				$disp   = true;
+				$disp = true;
 				$reason = '';
-				if ( strpos( strtolower( $myrow->comment_author_url ), '<script' ) !== false ) {
-					$reason .= "comment_author_url:&lt;script ";
+				// check each suspicious pattern in different fields
+				foreach ( $suspicious_patterns as $pattern ) {
+					$fields_to_check = [
+						'comment_author_url' => $myrow->comment_author_url,
+						'comment_agent' => $myrow->comment_agent,
+						'comment_author' => $myrow->comment_author,
+						'comment_author_email' => $myrow->comment_author_email,
+						'comment_content' => $myrow->comment_content
+					];
+					foreach ( $fields_to_check as $field_name => $field_value ) {
+						if ( stripos( $field_value, $pattern ) !== false ) {
+							$reason .= $field_name . ":" . htmlspecialchars( $pattern ) . " ";
+						}
+					}
 				}
-				if ( strpos( strtolower( $myrow->comment_agent ), '<script' ) !== false ) {
-					$reason .= "comment_agent:&lt;script ";
+				if ( !empty( $reason ) ) {
+					echo 'Found possible problems in comment (<span style="color:red">' . esc_html( $reason ) . '</span>) ID: ' . esc_html( $myrow->comment_ID ) . '<br>';
 				}
-				if ( strpos( strtolower( $myrow->comment_author ), '<script' ) !== false ) {
-					$reason .= "comment_author:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->comment_author_email ), '<script' ) !== false ) {
-					$reason .= "comment_author_email:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->comment_content ), '<script' ) !== false ) {
-					$reason .= "comment_content:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->comment_author_url ), 'eval(' ) !== false ) {
-					$reason .= "comment_author_url:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->comment_agent ), 'eval(' ) !== false ) {
-					$reason .= "comment_agent:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->comment_author ), 'eval(' ) !== false ) {
-					$reason .= "comment_author:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->comment_author_email ), 'eval(' ) !== false ) {
-					$reason .= "comment_author_email:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->comment_content ), 'eval(' ) !== false ) {
-					$reason .= "comment_content:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->comment_author_url ), 'eval (' ) !== false ) {
-					$reason .= "comment_author_url:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->comment_agent ), 'eval (' ) !== false ) {
-					$reason .= "comment_agent:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->comment_author ), 'eval (' ) !== false ) {
-					$reason .= "comment_author:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->comment_author_email ), 'eval (' ) !== false ) {
-					$reason .= "comment_author_email:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->comment_content ), 'eval (' ) !== false ) {
-					$reason .= "comment_content:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->comment_content ), 'document.write(unescape(' ) !== false ) {
-					$reason .= "comment_content:document.write(unescape( ";
-				}
-				if ( strpos( strtolower( $myrow->comment_content ), 'try{window.onload' ) !== false ) {
-					$reason .= "comment_content:try{window.onload ";
-				}
-				if ( strpos( strtolower( $myrow->comment_content ), "setAttribute('src'" ) !== false ) {
-					$reason .= "comment_content:setAttribute('src' ";
-				}
-				if ( strpos( strtolower( $myrow->comment_content ), 'javascript:' ) !== false ) {
-					$reason .= "comment_content:javascript: ";
-				}
-				_e( 'found possible problems in comment (' . $reason . ') ID', 'stop-spammer-registrations-plugin' ) . $myrow->comment_ID . '<br>';
 			}
 		} else {
-			_e( '<br>Nothing found in comments.<br>', 'stop-spammer-registrations-plugin' );
+			echo '<br>No suspicious patterns found in comments.<br>';
+			$disp = false;
 		}
 		flush();
 		echo '<hr>';
-		// links: links_id: link_url, link_image, link_description, link_notes, link_rss,link_rss
-		$ptab   = $pre . 'links';
-		_e( '<br><br>Testing Links<br>', 'stop-spammer-registrations-plugin' );
+		// links: links_id: link_url, link_image, link_description, link_notes, link_rss, link_rss
+		$ptab = $pre . 'links';
+		echo '<br><br>Testing Links<br>';
 		flush();
-		$sql = "select link_ID,link_url,link_image,link_description,link_notes
-			from $ptab where 
-			INSTR(LCASE(link_url), '<script') +
-			INSTR(LCASE(link_image), '<script') +
-			INSTR(LCASE(link_description), '<script') +
-			INSTR(LCASE(link_notes), '<script') +
-			INSTR(LCASE(link_rss), '<script') +
-			INSTR(LCASE(link_url), 'eval(') +
-			INSTR(LCASE(link_image), 'eval(') +
-			INSTR(LCASE(link_description), 'eval(') +
-			INSTR(LCASE(link_notes), 'eval(') +
-			INSTR(LCASE(link_rss), 'eval(') +
-			INSTR(LCASE(link_url), 'eval (') +
-			INSTR(LCASE(link_image), 'eval (') +
-			INSTR(LCASE(link_description), 'eval (') +
-			INSTR(LCASE(link_notes), 'eval (') +
-			INSTR(LCASE(link_rss), 'eval (') +
-			INSTR(LCASE(link_url), 'javascript:') >0
+		// suspicious patterns to search
+		$suspicious_patterns = [
+			'<script',
+			'eval(',
+			'eval (',
+			'javascript:'
+		];
+		// prepare the SQL query with placeholders
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $ptab is $wpdb->prefix which is safe
+		$sql = "
+			SELECT link_ID, link_url, link_image, link_description, link_notes, link_rss
+			FROM $ptab
+			WHERE (
+				LOWER(link_url) LIKE %s OR
+				LOWER(link_image) LIKE %s OR
+				LOWER(link_description) LIKE %s OR
+				LOWER(link_notes) LIKE %s OR
+				LOWER(link_rss) LIKE %s
+			)
 		";
-		$sql = str_replace( "\t", '', $sql );
-		$myrows = $wpdb->get_results( $sql );
+		// prepare bind parameters
+		$bind_params = [];
+		foreach ( $suspicious_patterns as $pattern ) {
+			$bind_params = array_merge(
+				$bind_params,
+				array_fill( 0, 5, '%' . $wpdb->esc_like( strtolower( $pattern ) ) . '%' )
+			);
+		}
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query is prepared with wpdb->prepare(), $ptab is $wpdb->prefix which is safe
+		$query = $wpdb->prepare(
+			$sql,
+			$bind_params[0],
+			$bind_params[1],
+			$bind_params[2],
+			$bind_params[3],
+			$bind_params[4]
+		);
+		$myrows = $wpdb->get_results( $query );
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		if ( $myrows ) {
 			foreach ( $myrows as $myrow ) {
 				$reason = '';
-				if ( strpos( strtolower( $myrow->link_url ), '<script' ) !== false ) {
-					$reason .= "link_url:&lt;script ";
+				// check each suspicious pattern in different fields
+				foreach ( $suspicious_patterns as $pattern ) {
+					$fields_to_check = [
+						'link_url' => $myrow->link_url,
+						'link_image' => $myrow->link_image,
+						'link_description' => $myrow->link_description,
+						'link_notes' => $myrow->link_notes,
+						'link_rss' => $myrow->link_rss
+					];
+					foreach ( $fields_to_check as $field_name => $field_value ) {
+						if ( stripos( $field_value, $pattern ) !== false ) {
+							$reason .= $field_name . ":" . htmlspecialchars( $pattern ) . " ";
+						}
+					}
 				}
-				if ( strpos( strtolower( $myrow->link_image ), '<script' ) !== false ) {
-					$reason .= "link_image:&lt;script ";
+				if ( !empty( $reason ) ) {
+					echo 'Found possible problems in links (<span style="color:red">' . esc_html( $reason ) . '</span>) ID: ' . esc_html( $myrow->link_ID ) . '<br>';
 				}
-				if ( strpos( strtolower( $myrow->link_description ), '<script' ) !== false ) {
-					$reason .= "link_description:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->link_notes ), '<script' ) !== false ) {
-					$reason .= "link_notes:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->link_rss ), '<script' ) !== false ) {
-					$reason .= "link_rss:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->link_url ), 'eval(' ) !== false ) {
-					$reason .= "link_url:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->link_image ), 'eval(' ) !== false ) {
-					$reason .= "link_image:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->link_description ), 'eval(' ) !== false ) {
-					$reason .= "link_description:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->link_notes ), 'eval(' ) !== false ) {
-					$reason .= "link_notes:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->link_rss ), 'eval(' ) !== false ) {
-					$reason .= "link_rss:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->link_url ), 'eval (' ) !== false ) {
-					$reason .= "link_url:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->link_image ), 'eval (' ) !== false ) {
-					$reason .= "link_image:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->link_description ), 'eval (' ) !== false ) {
-					$reason .= "link_description:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->link_notes ), 'eval (' ) !== false ) {
-					$reason .= "link_notes:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->link_rss ), 'eval (' ) !== false ) {
-					$reason .= "link_rss:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->link_url ), 'javascript:' ) !== false ) {
-					$reason .= "link_url:javascript: ";
-				}
-				_e( 'found possible problems in links (' . $reason . ') ID:', 'stop-spammer-registrations-plugin' ) . $myrow->link_ID . '<br>';
 			}
 		} else {
-			_e( '<br>Nothing found in links.<br>', 'stop-spammer-registrations-plugin' );
+			echo '<br>No suspicious patterns found in links.<br>';
 		}
+		flush();
 		echo '<hr>';
 		// users: ID: user_login, user_nicename, user_email, user_url, display_name
 		$ptab = $pre . 'users';
-		_e( '<br><br>Testing Users<br>', 'stop-spammer-registrations-plugin' );
+		echo '<br><br>Testing Users<br>';
 		flush();
-		$sql = "select ID,user_login,user_nicename,user_email,user_url,display_name 
-			from $ptab where 
-			INSTR(LCASE(user_login), '<script') +
-			INSTR(LCASE(user_nicename), '<script') +
-			INSTR(LCASE(user_email), '<script') +
-			INSTR(LCASE(user_url), '<script') +
-			INSTR(LCASE(display_name), '<script') +
-			INSTR(user_login, 'eval(') +
-			INSTR(user_nicename, 'eval(') +
-			INSTR(user_email, 'eval(') +
-			INSTR(user_url, 'eval(') +
-			INSTR(display_name, 'eval(') +
-			INSTR(user_login, 'eval (') +
-			INSTR(user_nicename, 'eval (') +
-			INSTR(user_email, 'eval (') +
-			INSTR(user_url, 'eval (') +
-			INSTR(display_name, 'eval (') +
-			INSTR(LCASE(user_url), 'javascript:') +
-			INSTR(LCASE(user_email), 'javascript:')>0
+		// suspicious patterns to search
+		$suspicious_patterns = [
+			'<script',
+			'eval(',
+			'eval (',
+			'javascript:'
+		];
+		// prepare the SQL query with placeholders
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $ptab is $wpdb->prefix which is safe
+		$sql = "
+			SELECT ID, user_login, user_nicename, user_email, user_url, display_name
+			FROM $ptab
+			WHERE (
+				LOWER( user_login ) LIKE %s OR
+				LOWER( user_nicename ) LIKE %s OR
+				LOWER( user_email ) LIKE %s OR
+				LOWER( user_url ) LIKE %s OR
+				LOWER( display_name ) LIKE %s
+			)
 		";
-		$sql = str_replace( "\t", '', $sql );
-		$myrows = $wpdb->get_results( $sql );
+		// prepare bind parameters
+		$bind_params = [];
+		foreach ( $suspicious_patterns as $pattern ) {
+			$bind_params = array_merge(
+				$bind_params,
+				array_fill( 0, 5, '%' . $wpdb->esc_like( strtolower( $pattern ) ) . '%' )
+			);
+		}
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query is prepared with wpdb->prepare(), $ptab is $wpdb->prefix which is safe
+		$query = $wpdb->prepare(
+			$sql,
+			$bind_params[0],
+			$bind_params[1],
+			$bind_params[2],
+			$bind_params[3],
+			$bind_params[4]
+		);
+		$myrows = $wpdb->get_results( $query );
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		if ( $myrows ) {
 			foreach ( $myrows as $myrow ) {
-				$disp   = true;
 				$reason = '';
-				if ( strpos( strtolower( $myrow->user_login ), '<script' ) !== false ) {
-					$reason .= "user_login:&lt;script ";
+				// check each suspicious pattern in different fields
+				foreach ( $suspicious_patterns as $pattern ) {
+					$fields_to_check = [
+						'user_login' => $myrow->user_login,
+						'user_nicename' => $myrow->user_nicename,
+						'user_email' => $myrow->user_email,
+						'user_url' => $myrow->user_url,
+						'display_name' => $myrow->display_name
+					];
+					foreach ( $fields_to_check as $field_name => $field_value ) {
+						if ( stripos( $field_value, $pattern ) !== false ) {
+							$reason .= $field_name . ":" . htmlspecialchars( $pattern ) . " ";
+						}
+					}
 				}
-				if ( strpos( strtolower( $myrow->user_nicename ), '<script' ) !== false ) {
-					$reason .= "user_nicename:&lt;script ";
+				if ( !empty( $reason ) ) {
+					echo 'Found possible problems in Users (<span style="color:red">' . esc_html( $reason ) . '</span>) ID: ' . esc_html( $myrow->ID ) . '<br>';
 				}
-				if ( strpos( strtolower( $myrow->user_email ), '<script' ) !== false ) {
-					$reason .= "user_email:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->user_url ), '<script' ) !== false ) {
-					$reason .= "user_url:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->display_name ), '<script' ) !== false ) {
-					$reason .= "display_name:&lt;script ";
-				}
-				if ( strpos( strtolower( $myrow->user_login ), 'eval(' ) !== false ) {
-					$reason .= "user_login:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->user_nicename ), 'eval(' ) !== false ) {
-					$reason .= "user_nicename:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->user_email ), 'eval(' ) !== false ) {
-					$reason .= "user_email:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->user_url ), 'eval(' ) !== false ) {
-					$reason .= "user_url:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->display_name ), 'eval(' ) !== false ) {
-					$reason .= "display_name:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->user_login ), 'eval (' ) !== false ) {
-					$reason .= "user_login:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->user_nicename ), 'eval (' ) !== false ) {
-					$reason .= "user_nicename:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->user_email ), 'eval (' ) !== false ) {
-					$reason .= "user_email:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->user_url ), 'eval (' ) !== false ) {
-					$reason .= "user_url:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->display_name ), 'eval (' ) !== false ) {
-					$reason .= "display_name:eval() ";
-				}
-				if ( strpos( strtolower( $myrow->user_email ), 'javascript:' ) !== false ) {
-					$reason .= "user_email:javascript: ";
-				}
-				if ( strpos( strtolower( $myrow->user_url ), 'javascript:' ) !== false ) {
-					$reason .= "user_url:javascript: ";
-				}
-				_e( 'found possible problems in Users (' . $reason . ') ID:', 'stop-spammer-registrations-plugin' ) . $myrow->ID . '<br>';
 			}
 		} else {
-			_e( '<br>Nothing found in users.<br>', 'stop-spammer-registrations-plugin' );
+			echo '<br>No suspicious patterns found in users.<br>';
 		}
+		flush();
 		echo '<hr>';
 		// options: option_id option_value, option_name
 		// I may have to update this as new websites show up
 		$ptab = $pre . 'options';
-		_e( '<br><br>Testing Options Table for HTML<br>', 'stop-spammer-registrations-plugin' );
+		echo '<br><br>Testing Options Table for HTML<br>';
 		flush();
 		$badguys = array(
-			'eval('							     => __( 'eval function found', 'stop-spammer-registrations-plugin' ),
-			'eval ('							 => __( 'eval function found', 'stop-spammer-registrations-plugin' ),
-			'networkads'						 => __( 'unexpected network ads reference', 'stop-spammer-registrations-plugin' ),
-			'document.write(unescape('		     => __( 'javascript document write unescape', 'stop-spammer-registrations-plugin' ),
-			'try{window.onload'				     => __( 'javascript onload event', 'stop-spammer-registrations-plugin' ),
-			'escape(document['				     => __( 'javascript checking document array', 'stop-spammer-registrations-plugin' ),
-			'escape(navigator['				     => __( 'javascript checking navigator', 'stop-spammer-registrations-plugin' ),
-			'document.write(string.fromcharcode' => __( 'obsfucated javascript write', 'stop-spammer-registrations-plugin' ),
-			'(base64' . '_decode'				 => __( 'base64 decode to hide code', 'stop-spammer-registrations-plugin' ),
-			'(gz' . 'inflate'					 => __( 'gzip inflate often used to hide code', 'stop-spammer-registrations-plugin' ),
-			'UA-27917097-1'					     => __( 'Bogus Google Analytics code', 'stop-spammer-registrations-plugin' ),
-			'w.wpquery.o'						 => __( 'Malicious jquery in bootleg plugin or theme', 'stop-spammer-registrations-plugin' ),
-			'<scr\\\'+'						     => __( 'Obfuscated script tag, usually in bootleg plugin or theme', 'stop-spammer-registrations-plugin' )
+			'eval('							     => 'eval function found',
+			'eval ('							 => 'eval function found',
+			'networkads'						 => 'unexpected network ads reference',
+			'document.write(unescape('		     => 'javascript document write unescape',
+			'try{window.onload'				     => 'javascript onload event',
+			'escape(document['				     => 'javascript checking document array',
+			'escape(navigator['				     => 'javascript checking navigator',
+			'document.write(string.fromcharcode' => 'obsfucated javascript write',
+			'(base64' . '_decode'				 => 'base64 decode to hide code',
+			'(gz' . 'inflate'					 => 'gzip inflate often used to hide code',
+			'UA-27917097-1'					     => 'Bogus Google Analytics code',
+			'w.wpquery.o'						 => 'Malicious jquery in bootleg plugin or theme',
+			'<scr\\\'+'						     => 'Obfuscated script tag, usually in bootleg plugin or theme'
 		);
-		$sql = "select option_id,option_value,option_name from $ptab where";
+		// prepare the SQL query with placeholders
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $ptab is $wpdb->prefix which is safe
+		$sql = "SELECT option_id, option_value, option_name FROM $ptab WHERE ";
+		$conditions = [];
+		$bind_params = [];
 		foreach ( $badguys as $baddie => $reas ) {
-			$sql .= "INSTR(LCASE(option_value), '$baddie') +";
+			$conditions[] = "LOWER( option_value ) LIKE %s";
+			$bind_params[] = '%' . $wpdb->esc_like( strtolower( $baddie ) ) . '%';
 		}
-		$sql	= trim( $sql, '+' );
-		$myrows = $wpdb->get_results( $sql );
+		$sql .= implode( ' OR ', $conditions );
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query is prepared with wpdb->prepare(), $ptab is $wpdb->prefix which is safe
+		$query = $wpdb->prepare( $sql, $bind_params );
+		$myrows = $wpdb->get_results( $query );
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		if ( $myrows ) {
 			foreach ( $myrows as $myrow ) {
-				// get the option and then red the string
-				$id	    = $myrow->option_id;
+				// skip transient feeds
+				if ( strpos( $myrow->option_name, '_transient_feed_' ) !== false ) {
+					continue;
+				}
+				$id     = $myrow->option_id;
 				$name   = $myrow->option_name;
-				$line   = $myrow->option_value;
-				$line   = htmlentities( $line );
+				$line   = htmlentities( $myrow->option_value );
 				$line   = strtolower( $line );
 				$reason = '';
-				if ( strpos( $name, '_transient_feed_' ) === false ) {
-					$disp = true;
-					foreach ( $badguys as $baddie => $reas ) {
-						if ( !( strpos( $line, $baddie ) === false ) ) {
-							// bad boy
-							$line   = ss_make_red( $baddie, $line );
-							$reason .= $reas . ' ';
-						}
+				foreach ( $badguys as $baddie => $reas ) {
+					if ( strpos( $line, strtolower( $baddie ) ) !== false ) {
+						$line = ss_make_red( $baddie, $line );
+						$reason .= $reas . ' ';
 					}
 				}
-				_e( '<strong>Found possible problems in Option $name (' . $reason . ')</strong> option_id:', 'stop-spammer-registrations-plugin' )
-					 . $myrow->option_id . ', value: $line<br><br>';
+				if ( !empty( $reason ) ) {
+					echo '<strong>Found possible problems in Option ' . esc_html( $name ) . ' (<span style="color:red">' . esc_html( $reason ) . '</span>)</strong> option_id: ' . esc_html( $myrow->option_id ) . ', value: ' . esc_html( $line ) . '<br><br>';
+				}
 			}
 		} else {
-			_e( '<br>Nothing found in options.<br>', 'stop-spammer-registrations-plugin' );
+			echo '<br>No suspicious patterns found in options.<br>';
 		}
 		echo '<hr>';
-		_e( '<h2>Scanning Themes and Plugins for eval</h2>', 'stop-spammer-registrations-plugin' );
+		echo '<h2>Scanning Themes and Plugins for eval</h2>';
 		flush();
 		if ( ss_scan_for_eval() ) {
 			$disp = true;
 		}
 		if ( $disp ) { ?>
-			<h2><?php _e( 'Possible Problems Found!', 'stop-spammer-registrations-plugin' ); ?></h2>
-			<p><?php _e( 'These are warnings only. Some content and plugins might not be
+			<h2>Possible Problems Found!</h2>
+			<p>These are warnings only. Some content and plugins might not be
 				malicious, but still contain one or more
 				of these indicators. Please investigate all indications of
 				problems. The plugin may err on the side of
-				caution.', 'stop-spammer-registrations-plugin' ); ?></p>
-			<p><?php _e( 'Although there are legitimate reasons for using the eval
+				caution.</p>
+			<p>'Although there are legitimate reasons for using the eval
 				function, and JavaScript uses it frequently,
 				finding eval in PHP code is in the very least bad practice, and
 				the worst is used to hide malicious
-				code. If eval() comes up in a scan, try to get rid of it.', 'stop-spammer-registrations-plugin' ); ?></p>
-			<p><?php _e( 'Your code could contain "eval", or "document.write(unescape(" or
+				code. If eval() comes up in a scan, try to get rid of it.</p>
+			<p>Your code could contain "eval", or "document.write(unescape(" or
 				"try{window.onload" or
 				setAttribute("src". These are markers for problems such as SQL
 				injection or cross-browser JavaScript.
@@ -969,13 +948,13 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 				else, except options. Options often have scripts for displaying
 				Facebook, Twitter, etc. Be careful,
 				though, if one appears in an option. Most of the time it is OK,
-				but make sure.', 'stop-spammer-registrations-plugin' ); ?></p>
+				but make sure.</p>
 		<?php } else { ?>
-			<h2><?php _e( 'No Problems Found', 'stop-spammer-registrations-plugin' ); ?></h2>
-			<p><?php _e( 'It appears that there are no eval or suspicious JavaScript
+			<h2>No Problems Found</h2>
+			<p>It appears that there are no eval or suspicious JavaScript
 				functions in the code in your wp-content
 				directory. That does not mean that you are safe, only that a
-				threat may be well-hidden.', 'stop-spammer-registrations-plugin' ); ?></p>
+				threat may be well-hidden.</p>
 		<?php }
 		flush();
 	} // end if runscan
@@ -988,7 +967,7 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 		$phparray = ss_scan_for_eval_recurse( realpath( get_home_path() ), $phparray );
 		// phparray should have a list of all of the PHP files
 		$disp = false;
-		_e( 'Files: <ol>', 'stop-spammer-registrations-plugin' );
+		echo 'Files: <ol>';
 		for ( $j = 0; $j < count( $phparray ); $j ++ ) {
 		// ignore my work on this subject
 			if ( strpos( $phparray[$j], 'threat_scan' ) === false && strpos( $phparray[$j], 'threat-scan' ) === false ) {
@@ -996,9 +975,9 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 				if ( count( $ansa ) > 0 ) {
 					$disp = true;
 					// echo "Think we got something<br>";
-					echo '<li>' . $phparray[$j] . ' <br> ';
+					echo '<li>' . esc_html( $phparray[$j] ) . ' <br> ';
 					for ( $k = 0; $k < count( $ansa ); $k ++ ) {
-						echo $ansa[$k] . ' <br>';
+						echo wp_kses_post( $ansa[$k] ) . ' <br>';
 					}
 					echo '</li>';
 				}
@@ -1050,8 +1029,15 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 		if ( strpos( $file, '.php' ) === false ) {
 			return false;
 		}
-		$handle = @fopen( $file, 'r' );
-		if ( $handle === false ) {
+		// initialize the WordPress filesystem
+		global $wp_filesystem;
+		if ( empty( $wp_filesystem ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			WP_Filesystem();
+		}
+		// read the file contents
+		$file_contents = $wp_filesystem->get_contents( $file );
+		if ( $file_contents === false ) {
 			return array();
 		}
 		$ansa	 = array();
@@ -1075,8 +1061,9 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 			'w.wpquery.o',
 			"<scr'+"
 		);
-		while ( !@feof( $handle ) ) {
-			$line = fgets( $handle );
+		// split the file contents into lines
+		$lines = explode( "\n", $file_contents );
+		foreach ( $lines as $line ) {
 			$line = htmlentities( $line );
 			$n ++;
 			foreach ( $badguys as $baddie ) {
@@ -1126,14 +1113,13 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 				}
 			}
 		}
-		fclose( $handle );
 		return $ansa;
 	}
 	function ss_make_red( $needle, $haystack ) {
 		// turns error red
 		$j = strpos( $haystack, $needle );
 		$s = substr_replace( $haystack, '</span>', $j + strlen( $needle ), 0 );
-		$s = substr_replace( $s, '<span style="color:red;">', $j, 0 );
+		$s = substr_replace( $s, '<span style="color:red">', $j, 0 );
 		return $s;
 	}
 	function ss_ok_list( $file, $line ) {

@@ -2,8 +2,8 @@
 // returns false if the IP is valid - returns reason if IP is invalid
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkvalidip {
@@ -58,23 +58,23 @@ class chkvalidip {
 	}
 	public function process( $ip, &$stats = array(), &$options = array(), &$post = array() ) {
 		if ( empty( $ip ) ) {
-			return __( 'Invalid IP: ', 'stop-spammer-registrations-plugin' ) . $ip;
+			return 'Invalid IP: ' . $ip;
 		}
 		if ( strpos( $ip, ':' ) === false && strpos( $ip, '.' ) === false ) {
-			return __( 'Invalid IP: ', 'stop-spammer-registrations-plugin' ) . $ip;
+			return 'Invalid IP: ' . $ip;
 		}
 		if ( defined( 'AF_INET6' ) && strpos( $ip, ':' ) !== false ) {
 			try {
 				if ( !@inet_pton( $ip ) ) {
-					return __( 'Invalid IP: ', 'stop-spammer-registrations-plugin' ) . $ip;
+					return 'Invalid IP: ' . $ip;
 				}
 			} catch ( Exception $e ) {
-				return __( 'Invalid IP: ', 'stop-spammer-registrations-plugin' ) . $ip;
+				return 'Invalid IP: ' . $ip;
 			}
 		}
 		// check IPv4 for local private IP addresses
 		if ( $ip == '127.0.0.1' ) {
-			return __( 'Accessing Site Through localhost', 'stop-spammer-registrations-plugin' );
+			return 'Accessing Site Through localhost';
 		}
 		$priv = array(
 			array( '100000000000', '100255255255' ),
@@ -84,7 +84,7 @@ class chkvalidip {
 		$ip2  = be_module::ip2numstr( $ip );
 		foreach ( $priv as $ips ) {
 			if ( $ip2 >= $ips[0] && $ip2 <= $ips[1] ) {
-				return __( 'Local IP Address: ', 'stop-spammer-registrations-plugin' ) . $ip;
+				return 'Local IP Address: ' . $ip;
 			}
 			if ( $ip2 < $ips[1] ) {
 				break;
@@ -104,24 +104,24 @@ class chkvalidip {
 		// check for IPv6
 		$lip = "127.0.0.1";
 		if ( substr( $ip, 0, 2 ) == 'FB' || substr( $ip, 0, 2 ) == 'fb' ) {
-			return __( 'Local IP Address: ', 'stop-spammer-registrations-plugin' ) . $ip;
+			return 'Local IP Address: ' . $ip;
 		}
 		// see if server and browser are running on same server
 		if ( array_key_exists( 'SERVER_ADDR', $_SERVER ) ) {
-			$lip = $_SERVER["SERVER_ADDR"];
+			$lip = sanitize_text_field( wp_unslash( $_SERVER["SERVER_ADDR"] ) );
 			if ( $ip == $lip ) {
-				return __( 'IP Same as Server: ', 'stop-spammer-registrations-plugin' ) . $ip;
+				return 'IP Same as Server: ' . $ip;
 			}
 		} else if ( array_key_exists( 'LOCAL_ADDR', $_SERVER ) ) { // IIS 7?
-			$lip = $_SERVER["LOCAL_ADDR"];
+			$lip = sanitize_text_field( wp_unslash( $_SERVER["LOCAL_ADDR"] ) );
 			if ( $ip == $lip ) {
-				return __( 'IP Same as Server: ', 'stop-spammer-registrations-plugin' ) . $ip;
+				return 'IP Same as Server: ' . $ip;
 			}
 		} else { // IIS 6 no server address use a gethost by name? hope we never get here
 			try {
-				$lip = @gethostbyname( $_SERVER['SERVER_NAME'] );
+				$lip = isset( $_SERVER['SERVER_NAME'] ) ? @gethostbyname( sanitize_text_field( wp_unslash( $_SERVER['SERVER_NAME'] ) ) ) : '';
 				if ( $ip == $lip ) {
-					return __( 'IP Same as Server: ', 'stop-spammer-registrations-plugin' ) . $ip;
+					return 'IP Same as Server: ' . $ip;
 				}
 			} catch ( Exception $e ) {
 			// can't make this work - ignore
@@ -137,7 +137,7 @@ class chkvalidip {
 			return false;
 		}
 		if ( substr( $ip, 0, $j ) == substr( $lip, 0, $k ) ) {
-			return __( 'IP same /24 subnet as server ', 'stop-spammer-registrations-plugin' ) . $ip;
+			return 'IP same /24 subnet as server ' . $ip;
 		}
 		return false;
 	}

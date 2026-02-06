@@ -1,16 +1,16 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 if ( !current_user_can( 'manage_options' ) ) {
-	die( __( 'Access Blocked', 'stop-spammer-registrations-plugin' ) );
+	die( 'Access Blocked' );
 }
 
 ss_fix_post_vars();
-$now	 = date( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
+$now	 = gmdate( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
 $options = ss_get_options();
 
 extract( $options );
@@ -19,7 +19,7 @@ extract( $options );
 $nonce = '';
 
 if ( array_key_exists( 'ss_stop_spammers_control', $_POST ) ) {
-	$nonce = $_POST['ss_stop_spammers_control'];
+	$nonce = sanitize_text_field( wp_unslash( $_POST['ss_stop_spammers_control'] ) );
 }
 
 if ( !empty( $nonce ) && wp_verify_nonce( $nonce, 'ss_stopspam_update' ) ) {
@@ -56,7 +56,7 @@ if ( !empty( $nonce ) && wp_verify_nonce( $nonce, 'ss_stopspam_update' ) ) {
 	foreach ( $optionlist as $check ) {
 		$v = 'N';
 		if ( array_key_exists( $check, $_POST ) ) {
-			$v = $_POST[$check];
+			$v = sanitize_text_field( wp_unslash( $_POST[$check] ) );
 			if ( $v != 'Y' ) {
 				$v = 'N';
 			}
@@ -209,7 +209,7 @@ if ( !empty( $nonce ) && wp_verify_nonce( $nonce, 'ss_stopspam_update' ) ) {
 	foreach ( $optionlist as $check ) {
 		$v = 'N';
 		if ( array_key_exists( $check, $_POST ) ) {
-			$v = $_POST[$check];
+			$v = sanitize_text_field( wp_unslash( $_POST[$check] ) );
 			if ( $v != 'Y' ) {
 				$v = 'N';
 			}
@@ -218,163 +218,144 @@ if ( !empty( $nonce ) && wp_verify_nonce( $nonce, 'ss_stopspam_update' ) ) {
 	}
 	// text options
 	if ( array_key_exists( 'sesstime', $_POST ) ) {
-		$sesstime			 = stripslashes( sanitize_text_field( $_POST['sesstime'] ) );
+		$sesstime			 = sanitize_text_field( wp_unslash( $_POST['sesstime'] ) );
 		$options['sesstime'] = $sesstime;
 	}
 	if ( array_key_exists( 'multitime', $_POST ) ) {
-		$multitime			  = stripslashes( sanitize_text_field( $_POST['multitime'] ) );
+		$multitime			  = sanitize_text_field( wp_unslash( $_POST['multitime'] ) );
 		$options['multitime'] = $multitime;
 	}
 	if ( array_key_exists( 'multicnt', $_POST ) ) {
-		$multicnt			 = stripslashes( sanitize_text_field( $_POST['multicnt'] ) );
+		$multicnt			 = sanitize_text_field( wp_unslash( $_POST['multicnt'] ) );
 		$options['multicnt'] = $multicnt;
 	}
 	ss_set_options( $options );
 	extract( $options ); // extract again to get the new options
-	$msg = '<div class="notice notice-success is-dismissible"><p>' . __( 'Options Updated', 'stop-spammer-registrations-plugin' ) . '</p></div>';
+	$msg = '<div class="notice notice-success is-dismissible"><p>' . 'Options Updated' . '</p></div>';
 }
 
 $nonce = wp_create_nonce( 'ss_stopspam_update' );
 
 ?>
 
-<!-- <sup class="ss_sup"><?php _e( 'NEW!', 'stop-spammer-registrations-plugin' ); ?></sup> -->
 <div id="ss-plugin" class="wrap">
-	<h1 class="ss_head">Stop Spammers — <?php _e( 'Protection Options', 'stop-spammer-registrations-plugin' ); ?></h1>
+	<h1 class="ss_head"><img src="<?php echo esc_url( plugin_dir_url( dirname( __FILE__ ) ) . 'images/stop-spammers-icon.png' ); ?>" class="ss_icon">Protection Options</h1>
 	<br>
 	<?php if ( !empty( $msg ) ) {
-		echo $msg;
+		echo wp_kses_post( $msg );
 	} ?>
 	<br>
 	<form method="post" action="" name="ss">
 		<input type="hidden" name="action" value="update">
-		<input type="hidden" name="ss_stop_spammers_control" value="<?php echo $nonce; ?>">
-		<div id="formchecking" class="mainsection"><?php _e( 'Form Checking', 'stop-spammer-registrations-plugin' ); ?>
-			<sup class="ss_sup"><a href="https://github.com/bhadaway/stop-spammers/wiki/Docs:-Protection-Options#form-checking" target="_blank">?</a></sup>
+		<input type="hidden" name="ss_stop_spammers_control" value="<?php echo esc_html( $nonce ); ?>">
+		<div id="formchecking" class="mainsection">Form Checking
+			<sup class="ss_sup"><a href="https://github.com/webguyio/stop-spammers/wiki/Docs:-Protection-Options#form-checking" target="_blank">?</a></sup>
 		</div>
 		<?php if ( is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
-			_e( '<p><span style="color:purple">WooCommerce detected. If you experience any issues using WooCommerce and Stop Spammers together, you may need to adjust these settings.</span></p>', 'stop-spammer-registrations-plugin' );
+			echo '<p><span style="color:purple">WooCommerce detected. If you experience any issues using WooCommerce and Stop Spammers together, you may need to adjust these settings.</span></p>';
 		} ?>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkform">
 				<input class="ss_toggle" type="checkbox" id="chkform" name="chkform" value="Y" <?php if ( $chkform == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Only Use the Plugin for Standard WordPress Forms', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Only Use the Plugin for Standard WordPress Forms</span></small>
 			</label>
 		</div>
 		<br>
-		<div id="membersonly" class="mainsection"><?php _e( 'Members-only Mode', 'stop-spammer-registrations-plugin' ); ?>
-			<sup class="ss_sup"><a href="https://github.com/bhadaway/stop-spammers/wiki/Docs:-Protection-Options#members-only-mode" target="_blank">?</a></sup>
+		<div id="membersonly" class="mainsection">Members-only Mode
+			<sup class="ss_sup"><a href="https://github.com/webguyio/stop-spammers/wiki/Docs:-Protection-Options#members-only-mode" target="_blank">?</a></sup>
 		</div>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="ss_private_mode">
 				<input class="ss_toggle" type="checkbox" id="ss_private_mode" name="ss_private_mode" value="Y" <?php if ( $ss_private_mode == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Require Users to Be Logged in to View Site', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Require Users to Be Logged in to View Site</span></small>
 			</label>
 		</div>
 		<br>
-		<div id="preventlockouts" class="mainsection"><?php _e( 'Prevent Lockouts', 'stop-spammer-registrations-plugin' ); ?>
-			<sup class="ss_sup"><a href="https://github.com/bhadaway/stop-spammers/wiki/Docs:-Protection-Options#prevent-lockouts" target="_blank">?</a></sup>
+		<div id="preventlockouts" class="mainsection">Prevent Lockouts
+			<sup class="ss_sup"><a href="https://github.com/webguyio/stop-spammers/wiki/Docs:-Protection-Options#prevent-lockouts" target="_blank">?</a></sup>
 		</div>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="addtoallowlist">
 				<input class="ss_toggle" type="checkbox" id="addtoallowlist" name="addtoallowlist" value="Y" <?php if ( $addtoallowlist == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Automatically Add Admins to Allow List', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Automatically Add Admins to Allow List</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkadminlog">
 				<input class="ss_toggle" type="checkbox" id="chkadminlog" name="chkadminlog" value="Y" <?php if ( $chkadminlog == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check Credentials on All Login Attempts', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check Credentials on All Login Attempts</span></small>
 			</label>
 		</div>
 		<br>
-		<div id="notificationcontrol" class="mainsection">
-			<?php _e( 'Notification Control', 'stop-spammer-registrations-plugin' ); ?>
-			<sup class="ss_sup"><a href="https://github.com/bhadaway/stop-spammers/wiki/Docs:-Protection-Options#notification-control" target="_blank">?</a></sup>
-		</div>
-		<div class="checkbox switcher">
-			<label id="ss_subhead" for="ss_keep_hidden_btn">
-				<input class="ss_toggle" type="checkbox" id="ss_keep_hidden_btn" name="ss_keep_hidden_btn" value="Y" <?php if ( $ss_keep_hidden_btn == 'Y' ) { echo 'checked="checked"'; } ?> onChange="(this.checked? '': jQuery('#ss_hide_all_btn').prop('checked', false) );"><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Show Keep Hidden Button', 'stop-spammer-registrations-plugin' ); ?></span></small>
-			</label>
-		</div>
-		<br>
-		<div class="checkbox switcher">
-			<label id="ss_subhead" for="ss_hide_all_btn">
-				<input class="ss_toggle" type="checkbox" id="ss_hide_all_btn" name="ss_hide_all_btn" value="Y" <?php if ( $ss_hide_all_btn == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Show Hide All Notices Button', 'stop-spammer-registrations-plugin' ); ?></span></small>
-			</label>
-		</div>
-		<br>
-		<div id="validaterequests" class="mainsection"><?php _e( 'Validate Requests', 'stop-spammer-registrations-plugin' ); ?>
-			<sup class="ss_sup"><a href="https://github.com/bhadaway/stop-spammers/wiki/Docs:-Protection-Options#validate-requests" target="_blank">?</a></sup>
+		<div id="validaterequests" class="mainsection">Validate Requests
+			<sup class="ss_sup"><a href="https://github.com/webguyio/stop-spammers/wiki/Docs:-Protection-Options#validate-requests" target="_blank">?</a></sup>
 		</div>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkaccept">
 				<input class="ss_toggle" type="checkbox" id="chkaccept" name="chkaccept" value="Y" <?php if ( $chkaccept == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Block Spam Missing the HTTP_ACCEPT Header', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Block Spam Missing the HTTP_ACCEPT Header</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkreferer">
 				<input class="ss_toggle" type="checkbox" id="chkreferer" name="chkreferer" value="Y" <?php if ( $chkreferer == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Block Invalid HTTP_REFERER', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Block Invalid HTTP_REFERER</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkdisp">
 				<input class="ss_toggle" type="checkbox" id="chkdisp" name="chkdisp" value="Y" <?php if ( $chkdisp == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Block Disposable Email Addresses', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Block Disposable Email Addresses</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chklong">
 				<input class="ss_toggle" type="checkbox" id="chklong" name="chklong" value="Y" <?php if ( $chklong == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for Long Emails, Author Name, or Password', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for Long Emails, Author Name, or Password</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkshort">
 				<input class="ss_toggle" type="checkbox" id="chkshort" name="chkshort" value="Y" <?php if ( $chkshort == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for Short Emails or Author Name', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for Short Emails or Author Name</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkbbcode">
 				<input class="ss_toggle" type="checkbox" id="chkbbcode" name="chkbbcode" value="Y" <?php if ( $chkbbcode == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for BBCodes', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for BBCodes</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkperiods">
 				<input class="ss_toggle" type="checkbox" id="chkperiods" name="chkperiods" value="Y" <?php if ( $chkperiods == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for Periods', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for Periods</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkhyphens">
 				<input class="ss_toggle" type="checkbox" id="chkhyphens" name="chkhyphens" value="Y" <?php if ( $chkhyphens == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for Hyphens', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for Hyphens</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chksession">
 				<input class="ss_toggle" type="checkbox" id="chksession" name="chksession" value="Y" onclick="ss_show_quick()" <?php if ( $chksession == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for Quick Responses', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for Quick Responses</span></small>
 			</label>
 		</div>
 		<br>
-		<span id="ss_show_quick" style="margin-left:30px;margin-bottom:15px;display:none">
-			<p style="margin-left:30px"><?php _e( 'Response Timeout Value: ', 'stop-spammer-registrations-plugin' ); ?>
+		<span id="ss_show_quick" style="margin-bottom:15px;display:none">
+			<p>Response Timeout Value:
 			<input name="sesstime" type="text" value="<?php echo esc_attr( $sesstime ); ?>" size="2"><br></p>
 		</span>
 		<script>
@@ -393,60 +374,60 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chk404">
 				<input class="ss_toggle" type="checkbox" id="chk404" name="chk404" value="Y" <?php if ( $chk404 == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Block 404 Exploit Probing', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Block 404 Exploit Probing</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkakismet">
 				<input class="ss_toggle" type="checkbox" id="chkakismet" name="chkakismet" value="Y" <?php if ( $chkakismet == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Block IPs Detected by Akismet', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Block IPs Detected by Akismet</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkexploits">
 				<input class="ss_toggle" type="checkbox" id="chkexploits" name="chkexploits" value="Y" <?php if ( $chkexploits == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for Exploits', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for Exploits</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkadmin">
 				<input class="ss_toggle" type="checkbox" id="chkadmin" name="chkadmin" value="Y" <?php if ( $chkadmin == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Block Login Attempts Using "admin" in Username', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Block Login Attempts Using "admin" in Username</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkubiquity">
 				<input class="ss_toggle" type="checkbox" id="chkubiquity" name="chkubiquity" value="Y" <?php if ( $chkubiquity == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check Against List of Ubiquity-Nobis and Other Spam Server IPs', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check Against List of Ubiquity-Nobis and Other Spam Server IPs</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkhosting">
 				<input class="ss_toggle" type="checkbox" id="chkhosting" name="chkhosting" value="Y" <?php if ( $chkhosting == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for Major Hosting Companies and Cloud Services', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for Major Hosting Companies and Cloud Services</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chktor">
 				<input class="ss_toggle" type="checkbox" id="chktor" name="chktor" value="Y" <?php if ( $chktor == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for Tor Exit Nodes', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for Tor Exit Nodes</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkmulti">
 				<input class="ss_toggle" type="checkbox" id="chkmulti" name="chkmulti" value="Y" onclick="ss_show_chkmulti()" <?php if ( $chkmulti == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for Many Hits in a Short Time', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for Many Hits in a Short Time</span></small>
 			</label>
 		</div>
-		<span id="ss_show_chkmulti" style="margin-left:30px;margin-bottom:15px;display:none">
-			<p style="margin-left:30px"><?php _e( 'Block access when there are', 'stop-spammer-registrations-plugin' ); ?>
+		<span id="ss_show_chkmulti" style="margin-bottom:15px;display:none">
+			<p>Block access when there are
 				<select name="multicnt">
 					<option val="4" <?php if ( $multicnt <= 4 ) { echo 'selected="selected"'; } ?>>4</option>
 					<option val="5" <?php if ( $multicnt == 5 ) { echo 'selected="selected"'; } ?>>5</option>
@@ -456,7 +437,7 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 					<option val="9" <?php if ( $multicnt == 9 ) { echo 'selected="selected"'; } ?>>9</option>
 					<option val="10" <?php if ( $multicnt >= 10 ) { echo 'selected="selected"'; } ?>>10</option>
 				</select>
-				<?php _e( 'comments or logins in less than', 'stop-spammer-registrations-plugin' ); ?>
+				comments or logins in less than
 				<select name="multitime">
 					<option val="1" <?php if ( $multitime <= 1 ) { echo 'selected="selected"'; } ?>>1</option>
 					<option val="2" <?php if ( $multitime == 2 ) { echo 'selected="selected"'; } ?>>2</option>
@@ -469,7 +450,7 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 					<option val="9" <?php if ( $multitime == 9 ) { echo 'selected="selected"'; } ?>>9</option>
 					<option val="10" <?php if ( $multitime >= 10 ) { echo 'selected="selected"'; } ?>>10</option>
 				</select>
-				<?php _e( 'minutes.', 'stop-spammer-registrations-plugin' ); ?><br>
+				minutes.
 			</p>
 		</span>
 		<script>
@@ -490,26 +471,26 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="chkamazon">
 				<input class="ss_toggle" type="checkbox" id="chkamazon" name="chkamazon" value="Y" <?php if ( $chkamazon == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Check for Amazon Cloud', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Check for Amazon Cloud</span></small>
 			</label>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="filterregistrations">
 				<input class="ss_toggle" type="checkbox" id="filterregistrations" name="filterregistrations" value="Y" <?php if ( $filterregistrations == 'Y' ) { echo 'checked="checked"'; } ?>><span><small></small></span>
-				<small><span style="font-size:16px!important"><?php _e( 'Filter Login Requests', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<small><span style="font-size:16px!important">Filter Login Requests</span></small>
 			</label>
 		</div>
 		<br>
 		<br>
-		<div id="blockcountries" class="mainsection"><?php _e( 'Block Countries', 'stop-spammer-registrations-plugin' ); ?>
-			<sup class="ss_sup"><a href="https://github.com/bhadaway/stop-spammers/wiki/Docs:-Protection-Options#block-countries" target="_blank">?</a></sup>
+		<div id="blockcountries" class="mainsection">Block Countries
+			<sup class="ss_sup"><a href="https://github.com/webguyio/stop-spammers/wiki/Docs:-Protection-Options#block-countries" target="_blank">?</a></sup>
 		</div>
 		<br>
 		<div class="checkbox switcher">
 			<label id="ss_subhead" for="countries">
-				<input class="ss_toggle" type="checkbox" id="countries" name="ss_set" value="1" onclick='var t=ss.ss_set.checked;var els=document.getElementsByTagName("INPUT");for (index = 0; index < els.length; ++index){if (els[index].type=="checkbox"){if (els[index].name.length==5){els[index].checked=t;}}}'/>
-				<small><span class="button-primary" style="font-size:16px!important"><?php _e( 'Check All', 'stop-spammer-registrations-plugin' ); ?></span></small>
+				<input class="ss_toggle" type="checkbox" id="countries" name="ss_set" value="1" onclick='var t=ss.ss_set.checked;var els=document.getElementsByTagName("INPUT");for (index = 0; index < els.length; ++index){if (els[index].type=="checkbox"){if (els[index].name.length==5){els[index].checked=t;}}}'>
+				<small><span class="button-primary" style="font-size:16px!important">Check All</span></small>
 			</label>
 		</div>
 		<br>
@@ -934,6 +915,6 @@ $nonce = wp_create_nonce( 'ss_stopspam_update' );
 			<input name="chkYE" type="checkbox" value="Y" <?php if ( $chkYE == "Y" ) { echo 'checked="checked"'; } ?>>Yemen
 		</div>
 		<br style="clear:both">
-		<p class="submit"><input class="button-primary" value="<?php _e( 'Save Changes', 'stop-spammer-registrations-plugin' ); ?>" type="submit"></p>
+		<p class="submit"><input class="button-primary" value="Save Changes" type="submit"></p>
 	</form>
 </div>

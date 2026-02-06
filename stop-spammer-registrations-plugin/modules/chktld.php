@@ -3,8 +3,8 @@
 // thanks to Johan Schiff
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chktld { // change name
@@ -37,7 +37,7 @@ class chktld { // change name
 				$tt = implode( '.', array_slice( $t, count( $t ) - $dlvl, $dlvl ) );
 				$tt = '.' . trim( strtolower( $tt ) );
 				if ( $ft == $tt ) {
-					return __( 'TLD Blocked: ' . $key . ': ' . $value . ': ' . $ft . '', 'stop-spammer-registrations-plugin' );
+					return 'TLD Blocked: ' . $key . ': ' . $value . ': ' . $ft;
 				}
 			}
 		}

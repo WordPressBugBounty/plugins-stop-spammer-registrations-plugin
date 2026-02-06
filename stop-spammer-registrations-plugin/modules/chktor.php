@@ -2,8 +2,8 @@
 // Allow List - returns false if not found
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 // last updated from https://raw.githubusercontent.com/SecOps-Institute/Tor-IP-Addresses/master/tor-exit-nodes.lst on 2/29/24
@@ -1758,7 +1758,7 @@ class chktor extends be_module {
 			'2a12:a800:0002:0001:0045:0138:0016:0203'
 		);
 		if ( in_array( $ip, $torlist ) ) {
-			return __( 'Tor Exit Node: ', 'stop-spammer-registrations-plugin' );
+			return 'Tor Exit Node';
 		}
 		return false;
 		// return false if OK, return a reason if not

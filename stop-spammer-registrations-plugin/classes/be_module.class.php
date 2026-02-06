@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class be_module {
@@ -40,23 +40,21 @@ class be_module {
 	}
 
 	public static function getSname() {
-	// gets the module name from the URL address line
+		// gets the module name from the URL address line
 		$sname = '';
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
-			$sname = $_SERVER["REQUEST_URI"];
+			$sname = sanitize_url( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 		}
 		if ( empty( $sname ) ) {
-			$_SERVER['REQUEST_URI'] = $_SERVER['SCRIPT_NAME'];
-			$sname				    = $_SERVER["SCRIPT_NAME"];
-			if ( $_SERVER['QUERY_STRING'] ) {
-				$_SERVER['REQUEST_URI'] .= '?' . $_SERVER['QUERY_STRING'];
+			$_SERVER['REQUEST_URI'] = isset( $_SERVER['SCRIPT_NAME'] ) ? sanitize_url( wp_unslash( $_SERVER['SCRIPT_NAME'] ) ) : '';
+			$sname = isset( $_SERVER['SCRIPT_NAME'] ) ? sanitize_url( wp_unslash( $_SERVER['SCRIPT_NAME'] ) ) : '';
+			// phpcs:disable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- QUERY_STRING is sanitized with sanitize_query_var()
+			if ( isset( $_SERVER['QUERY_STRING'] ) && !empty( $_SERVER['QUERY_STRING'] ) ) {
+				$_SERVER['REQUEST_URI'] .= '?' . sanitize_query_var( wp_unslash( $_SERVER['QUERY_STRING'] ) );
 			}
+			// phpcs:enable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
-		// echo "sname = $sname<br>";
-		if ( empty( $sname ) ) {
-			$sname = '';
-		}
-		return $sname;
+		return empty( $sname ) ? '' : $sname;
 	}
 
 	public static function cidr2str( $ipl, $bits ) {
@@ -96,11 +94,17 @@ class be_module {
 				 && strpos( $search, '/' ) !== false
 			) {
 				// searching for an cidr in the list
-				list( $subnet, $mask ) = explode( '/', $search );
-				$x2 = ip2long( $needle ) & ~( ( 1 << ( 32 - $mask ) ) - 1 );
-				$x3 = ip2long( $subnet ) & ~( ( 1 << ( 32 - $mask ) ) - 1 );
-				if ( $x2 == $x3 ) {
-					return "$searchname: $reason";
+				$parts = explode( '/', $search );
+				if ( count( $parts ) === 2 ) {
+					list( $subnet, $mask ) = $parts;
+					$mask = intval( $mask );
+					if ( $mask > 0 && $mask <= 32 ) {
+						$x2 = ip2long( $needle ) & ~( ( 1 << ( 32 - $mask ) ) - 1 );
+						$x3 = ip2long( $subnet ) & ~( ( 1 << ( 32 - $mask ) ) - 1 );
+						if ( $x2 == $x3 ) {
+							return "$searchname: $reason";
+						}
+					}
 				}
 			}
 			// check for wildcard - both email and IP
@@ -197,11 +201,17 @@ class be_module {
 			}
 			if ( substr_count( $needle, '.' ) == 3 && strpos( $search, '/' ) !== false ) {
 				// searching for an cidr in the list
-				list( $subnet, $mask ) = explode( '/', $search );
-				$x2 = ip2long( $needle ) & ~( ( 1 << ( 32 - $mask ) ) - 1 );
-				$x3 = ip2long( $subnet ) & ~( ( 1 << ( 32 - $mask ) ) - 1 );
-				if ( $x2 == $x3 ) {
-					return "$searchname: $reason";
+				$parts = explode( '/', $search );
+				if ( count( $parts ) === 2 ) {
+					list( $subnet, $mask ) = $parts;
+					$mask = intval( $mask );
+					if ( $mask > 0 && $mask <= 32 ) {
+						$x2 = ip2long( $needle ) & ~( ( 1 << ( 32 - $mask ) ) - 1 );
+						$x3 = ip2long( $subnet ) & ~( ( 1 << ( 32 - $mask ) ) - 1 );
+						if ( $x2 == $x3 ) {
+							return "$searchname: $reason";
+						}
+					}
 				}
 			}
 		}
@@ -216,6 +226,7 @@ class be_module {
 
 	public function ipListMatch( $ip ) {
 		// does a match agains a list of IP addresses
+		$ip = is_array( $ip ) ? $ip[0] : $ip;
 		$ipt = be_module::ip2numstr( $ip );
 		foreach ( $this->searchlist as $c ) {
 			if ( !is_array( $c ) ) {
@@ -253,8 +264,8 @@ class be_module {
 					$ipe = be_module::ip2numstr( $ipe );
 					if ( $ipt >= $ips && $ipt <= $ipe ) {
 						if ( is_array( $ip ) ) {
-							_e( 'Array in IP: ', 'stop-spammer-registrations-plugin' ) . print_r( $ip, true )
-								 . "<br>";
+							// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- Debug output for unexpected data condition
+							echo 'Array in IP: ' . esc_html( print_r( $ip, true ) ) . "<br>";
 							$ip = $ip[0];
 						}
 						return $this->searchname . ': ' . $ip;

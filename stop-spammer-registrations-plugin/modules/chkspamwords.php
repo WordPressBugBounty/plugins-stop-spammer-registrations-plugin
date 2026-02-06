@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkspamwords {
@@ -15,7 +15,7 @@ class chkspamwords {
 			if ( !empty( $data ) ) {
 				foreach ( $spamwords as $sw ) {
 					if ( stripos( $data, $sw ) !== false ) {
-						return __( 'Spam Word: ' . $sw . ' in ' . $key . '', 'stop-spammer-registrations-plugin' );
+						return 'Spam Word: ' . $sw . ' in ' . $key;
 					}
 				}
 			}

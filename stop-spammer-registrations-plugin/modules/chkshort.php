@@ -1,18 +1,18 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkshort { // change name
+	public $searchname = 'Email/Username Too Short';
 	public function process( $ip, &$stats = array(), &$options = array(), &$post = array() ) {
-		$this->searchname = 'Email/Username Too Short';
 		if ( array_key_exists( 'email', $post ) ) {
 			$email = $post['email'];
 			if ( !empty( $email ) ) {
 				if ( strlen( $email ) < 5 ) {
-					return __( 'Email Too Short: ' . $email . '', 'stop-spammer-registrations-plugin' );
+					return 'Email Too Short: ' . $email;
 				}
 			}
 		}
@@ -21,7 +21,7 @@ class chkshort { // change name
 				$author = $post['author'];
 				// short author is OK?
 				if ( strlen( $post['author'] ) < 3 ) {
-					return __( 'Username Too Short: ' . $author . '', 'stop-spammer-registrations-plugin' );
+					return 'Username Too Short: ' . $author;
 				}
 			}
 		}

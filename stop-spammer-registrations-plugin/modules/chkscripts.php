@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkscripts extends be_module {
@@ -10,11 +10,11 @@ class chkscripts extends be_module {
 	public function process( $ip, &$stats = array(), &$options = array(), &$post = array() ) {
 		$sname = $this->getSname();
 		if ( strpos( $sname, 'wp-cron.php' ) !== false ) {
-			return __( 'allow wp-cron', 'stop-spammer-registrations-plugin' );
+			return 'allow wp-cron';
 		}
 		// if( strpos( $sname, 'admin.php?' ) !== false ) return "allow admin.php?";
 		if ( strpos( $sname, 'admin-ajax.php' ) !== false ) {
-			return __( 'allow admin-ajax.php', 'stop-spammer-registrations-plugin' );
+			return 'allow admin-ajax.php';
 		} // necessary?
 		return false;
 	}

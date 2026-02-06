@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkadminlog extends be_module {
@@ -22,7 +22,7 @@ class chkadminlog extends be_module {
 			}
 			$user = @wp_authenticate( $log, $pwd );
 			if ( !is_wp_error( $user ) ) { // user login is good
-				return __( 'Authenticated User Login', 'stop-spammer-registrations-plugin' );
+				return 'Authenticated User Login';
 			}
 			return false;
 		}

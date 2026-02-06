@@ -1,16 +1,12 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkbotscout extends be_module {
 	public function process( $ip, &$stats = array(), &$options = array(), &$post = array() ) {
-		$disabled = true;
-		if ( $disabled ) {
-			return false;
-		}
 		if ( strpos( $ip, '.' ) === false ) {
 			return false;
 		}
@@ -29,7 +25,7 @@ class chkbotscout extends be_module {
 		$check   = $this->getafile( $query, 'GET' );
 		if ( !empty( $check ) ) {
 			if ( substr( $check, 0, 4 ) == "ERR:" ) {
-				return $check . __( 'BotScout Error, ', 'stop-spammer-registrations-plugin' );
+				return $check . 'BotScout Error, ';
 			}
 			if ( strpos( $check, '|' ) ) {
 				$result = explode( '|', $check );

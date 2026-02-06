@@ -2,8 +2,8 @@
 // Allow List - returns false if not found
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkdisp {
@@ -3129,7 +3129,7 @@ class chkdisp {
 		if ( count( $emdomain ) == 2 && in_array( strtolower( $emdomain[1] ), $disposables ) ) {
 			// the email is a disposable email address
 			// do you really want this guy?
-			return __( 'Disposable Email: ', 'stop-spammer-registrations-plugin' ) . $options['em'];
+			return 'Disposable Email: ' . $options['em'];
 		}
 		return false;
 	}

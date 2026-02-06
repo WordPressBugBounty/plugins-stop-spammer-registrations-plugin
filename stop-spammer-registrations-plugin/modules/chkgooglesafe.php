@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkgooglesafe extends be_module {
@@ -55,7 +55,7 @@ class chkgooglesafe extends be_module {
 				$r	   = $this->getafile( $query );
 				if ( !empty( $r ) ) {
 					if ( strpos( $r, 'phishing' ) !== false || strpos( $r, 'malware' ) !== false ) {
-						return __( 'Google Safe: ', 'stop-spammer-registrations-plugin' ) . $r;
+						return 'Google Safe: ' . $r;
 					}
 				}
 			}

@@ -3,8 +3,8 @@
 // originally designed to block admin login attempts
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkadmin extends be_module {
@@ -23,7 +23,7 @@ class chkadmin extends be_module {
 			return false;
 		} // false alarm - really is a person admin
 		// this may cause problems when a legitimate new user wants to include the string admin in their username
-		return __( 'Admin Login or Registration Attempt: ' . $login . '', 'stop-spammer-registrations-plugin' );
+		return 'Admin Login or Registration Attempt: ' . $login;
 	}
 }
 

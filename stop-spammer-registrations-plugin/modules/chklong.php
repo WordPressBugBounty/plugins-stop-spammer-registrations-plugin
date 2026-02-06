@@ -6,13 +6,13 @@ if ( !defined( 'ABSPATH' ) ) {
 }
 
 class chklong { // change name
+	public $searchname = 'Email/Username/Password Too Long';
 	public function process( $ip, &$stats = array(), &$options = array(), &$post = array() ) {
-		$this->searchname = 'Email/Username/Password Too Long';
 		if ( array_key_exists( 'email', $post ) ) {
 			$email = $post['email'];
 			if ( !empty( $email ) ) {
 				if ( strlen( $email ) > 64 ) {
-					return __( 'Email Too Long: ' . $email . '', 'stop-spammer-registrations-plugin' );
+					return 'Email Too Long: ' . $email;
 				}
 			}
 		}
@@ -20,7 +20,7 @@ class chklong { // change name
 			if ( !empty( $post['author'] ) ) {
 				$author = $post['author'];
 				if ( strlen( $post['author'] ) > 64 ) {
-					return __( 'Username Too Long: ' . $author . '', 'stop-spammer-registrations-plugin' );
+					return 'Username Too Long: ' . $author;
 				}
 			}
 		}
@@ -28,7 +28,7 @@ class chklong { // change name
 			if ( !empty( $post['psw'] ) ) {
 				$psw = $post['psw'];
 				if ( strlen( $post['psw'] ) > 32 ) {
-					return __( 'Password Too Long: ' . $psw . '', 'stop-spammer-registrations-plugin' );
+					return 'Password Too Long: ' . $psw;
 				}
 			}
 		}

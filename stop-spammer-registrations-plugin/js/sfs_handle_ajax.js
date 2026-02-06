@@ -2,6 +2,7 @@ var sfs_ajax_who = "";
 
 function sfs_ajax_process(sip, contx, sfunc, url, email = '') {
 	sfs_ajax_who = contx;
+	var func_nonce = StopSpammersAjaxConfig.func_nonces[sfunc] || '';
 	var data = {
 		action: 'sfs_process',
 		ip: sip,
@@ -10,9 +11,10 @@ function sfs_ajax_process(sip, contx, sfunc, url, email = '') {
 		func: sfunc,
 		ajax_url: url,
 		_ajax_nonce: StopSpammersAjaxConfig.actions.sfs_process,
+		func_nonce: func_nonce,
 	};
-	jQuery.get(StopSpammersAjaxConfig.ajax_url, data, sfs_ajax_return_process)
-    .fail(sfs_ajax_error_handler);
+	jQuery.post(StopSpammersAjaxConfig.ajax_url, data, sfs_ajax_return_process)
+	.fail(sfs_ajax_error_handler);
 }
 
 function sfs_ajax_error_handler(xhr, status, error) {
@@ -29,7 +31,7 @@ function sfs_ajax_error_handler(xhr, status, error) {
 function sfs_ajax_return_process(response) {
 	var el = "";
 	if (response.data) {
-		if (! response.success) {
+		if (!response.success) {
 			alert(response.data);
 		}
 		return false;
@@ -64,8 +66,8 @@ function sfs_ajax_report_spam(t, id, blog, url, email, ip, user) {
 		user: user,
 		_ajax_nonce: StopSpammersAjaxConfig.actions.sfs_sub,
 	};
-	jQuery.get(StopSpammersAjaxConfig.ajax_url, data, sfs_ajax_return_spam)
-    .fail(sfs_ajax_error_handler);
+	jQuery.post(StopSpammersAjaxConfig.ajax_url, data, sfs_ajax_return_spam)
+	.fail(sfs_ajax_error_handler);
 }
 
 function sfs_ajax_return_spam(response) {
@@ -87,64 +89,3 @@ function sfs_ajax_return_spam(response) {
 	alert(response);
 	return false;
 }
-
-jQuery(function($) {
-	$('.ss-hide-notice').on('click', function() {
-		if ($(this).data('target') == 'user') {
-			$(this).parent().parent().hide();
-			var data = {
-				action: 'ss_update_notice_preference',
-				notice_id: $(this).data('notice-id'),
-				_ajax_nonce: StopSpammersAjaxConfig.actions.ss_update_notice_preference,
-			};
-			$.post(StopSpammersAjaxConfig.ajax_url, data)
-        .fail(sfs_ajax_error_handler);
-		}
-	});
-	$('#ss_disable_admin_emails').on('click', function() {
-		if (this.checked) {
-			$('.ss_disable_admin_emails_wraps').show()
-		} else {
-			$('.ss_disable_admin_emails_wraps').hide()
-		}
-	});
-	$('#ss_hide_admin_notices').on('click', function() {
-		if (this.checked) {
-			$('.ss_reset_hidden_notice_wrap').hide()
-		} else {
-			$('.ss_reset_hidden_notice_wrap').show()
-		}
-	});
-	$('.ss_action').on('click', function() {
-		var data = {
-			action: 'ss_allow_block_ip',
-			type: $(this).data('type'),
-			ip: $(this).data('ip'),
-			_ajax_nonce: StopSpammersAjaxConfig.actions.ss_allow_block_ip,
-		};
-		$.post(StopSpammersAjaxConfig.ajax_url, data).then(data => {
-			alert('Successfully Added')
-		});
-	});
-	$('.ss_action').click(function(){
-		$(this).hide();
-		$(this).next().hide();
-	});
-	function checkFormStatus() {
-		if ($('#chkform').is(':checked')){
-			$('#chkwooform').attr("disabled",true);
-			$('#chkgvform').attr("disabled",true);
-			$('#chkwpform').attr("disabled",true);
-		}
-		else {
-			$('#chkwooform').attr("disabled",false);
-			$('#chkgvform').attr("disabled",false);
-			$('#chkwpform').attr("disabled",false);
-		}
-	}
-	$('#chkform').change(function(){
-		if ($('#chkform').data('status') == 'valid'){
-			checkFormStatus();
-		}
-	});
-});

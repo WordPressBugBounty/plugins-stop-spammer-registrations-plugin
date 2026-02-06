@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chksfs extends be_module {
@@ -25,7 +25,7 @@ class chksfs extends be_module {
 				$k		  = strpos( $check, '<lastseen>', $n );
 				$k		 += 10;
 				$j		  = strpos( $check, '</lastseen>', $k );
-				$lastseen = date( 'Y-m-d', time() );
+				$lastseen = gmdate( 'Y-m-d', time() );
 				if ( ( $j - $k ) > 12 && ( $j - $k ) < 24 ) {
 					$lastseen = substr( $check, $k, $j - $k );
 				} // should be about 20 characters
@@ -51,7 +51,7 @@ class chksfs extends be_module {
 			if ( ( $frequency >= $sfsfreq ) && ( strtotime( $lastseen ) > ( time() - ( 60 * 60 * 24 * $sfsage ) ) ) ) {
 				// frequency we got from the db, sfsfreq is the min we'll accept (default 0)
 				// sfsage is the age in days - we get lastscene from
-				return __( 'SFS Last Seen = ' . $lastseen . ', Frequency = ' . $frequency . '', 'stop-spammer-registrations-plugin' );
+				return 'SFS Last Seen = ' . $lastseen . ', Frequency = ' . $frequency;
 			}
 		}
 		return false;

@@ -1,25 +1,25 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkreferer extends be_module {
+	public $searchname = 'HTTP_REFERER check';
 	public function process( $ip, &$stats = array(), &$options = array(), &$post = array() ) {
-		$this->searchname = 'HTTP_REFERER check';
 		// only check this on posts, but we can double check
-		if ( !$_SERVER['REQUEST_METHOD'] === 'POST' ) {
+		if ( !isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'POST' ) {
 			return false;
 		}
 		$ref = '';
 		// made it this far - there is a post
 		if ( array_key_exists( 'HTTP_REFERER', $_SERVER ) ) {
-			$ref = $_SERVER['HTTP_REFERER'];
+			$ref = sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
 		}
 		$ua = '';
 		if ( array_key_exists( 'HTTP_USER_AGENT', $_SERVER ) ) {
-			$ua = $_SERVER['HTTP_USER_AGENT'];
+			$ua = sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) );
 		}
 		$a = array( false, '' );
 		if ( strpos( strtolower( $ua ), 'iphone' ) === false && strpos( strtolower( $ua ), 'ipad' ) === false ) {
@@ -27,12 +27,12 @@ class chkreferer extends be_module {
 		}
 		// require the referer
 		// check to see if our domain is found in the referer
-		$host = $_SERVER['HTTP_HOST'];
+		$host = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
 		if ( empty( $ref ) ) {
-			return __( 'Missing HTTP_REFERER', 'stop-spammer-registrations-plugin' );
+			return 'Missing HTTP_REFERER';
 		}
 		if ( empty( $host ) ) {
-			return __( 'Missing HTTP_HOST', 'stop-spammer-registrations-plugin' );
+			return 'Missing HTTP_HOST';
 		}
 		// some servers have an empty host for some reason
 		// some servers and links from https to http and back don't send a referer
@@ -41,7 +41,7 @@ class chkreferer extends be_module {
 		} // had to do this because sometimes legit ones are null?
 		if ( strpos( strtolower( $ref ), strtolower( $host ) ) === false ) {
 			// bad referer - must be from this site
-			return __( 'Invalid HTTP_REFERER', 'stop-spammer-registrations-plugin' );
+			return 'Invalid HTTP_REFERER';
 		}
 		return false;
 	}

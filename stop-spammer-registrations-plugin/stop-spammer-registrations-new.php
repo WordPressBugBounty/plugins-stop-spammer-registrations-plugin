@@ -1,40 +1,42 @@
 <?php
 /*
-Plugin Name: Stop Spammers
-Plugin URI: https://www.calculator.io/no-spam/
-Description: Secure your WordPress sites and stop spam dead in its tracks. Designed to secure your website immediately.
-Version: 2024.7
+Plugin Name: Stop Spammers Classic
+Plugin URI: https://damspam.com/
+Description: A simplified, restored, and preserved version of the original Stop Spammers plugin.
+Version: 2026.2
 Requires at least: 3.0
 Requires PHP: 5.0
-Author: Stop SPAM
-Author URI: https://www.calculator.io/no-spam/
-License: GPLv3 or later
+Author: Web Guy
+Author URI: https://webguy.io/
+License: GPL
 License URI: https://www.gnu.org/licenses/gpl.html
-Domain Path: /languages
-Text Domain: stop-spammer-registrations-plugin
 */
 
+if ( !defined( 'ABSPATH' ) ) {
+	status_header( 404 );
+	exit;
+}
+
 // networking requires a couple of globals
-define( 'SS_VERSION', '2024.7' );
+define( 'SS_VERSION', '2026.2' );
 define( 'SS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'SS_PLUGIN_FILE', plugin_dir_path( __FILE__ ) );
-define( 'SS_PLUGIN_DATA', plugin_dir_path( __FILE__ ) . 'data/' );
-$ss_check_sempahore = false;
-
-if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
-}
-
-// making translation-ready
-function ss_load_plugin_textdomain() {
-	load_plugin_textdomain( 'stop-spammer-registrations-plugin', FALSE, basename( dirname( __FILE__ ) ) . '/languages/' );
-}
-add_action( 'plugins_loaded', 'ss_load_plugin_textdomain' );
+define( 'SS_PLUGIN_DATA', wp_upload_dir()['basedir'] . '/data/' );
 
 function ss_assets_version() {
 	return defined( 'WP_DEBUG' ) && WP_DEBUG ? ( string ) time() : SS_VERSION;
 }
+
+// add data folder
+function ss_create_data_folder() {
+	WP_Filesystem();
+	global $wp_filesystem;
+	$upload_dir = wp_upload_dir()['basedir'] . '/data';
+	if ( !$wp_filesystem->is_dir( $upload_dir ) ) {
+		$wp_filesystem->mkdir( $upload_dir, 0700 );
+	}
+}
+register_activation_hook( __FILE__, 'ss_create_data_folder' );
 
 // load admin styles
 function ss_styles() {
@@ -45,22 +47,18 @@ function ss_styles() {
 		array(),
 		$version
 	);
-	wp_enqueue_style(
-		'ss-modal-css',
-		plugin_dir_url( __FILE__ ) . 'css/modal.css',
-		array(),
-		$version
-	);
 }
 add_action( 'admin_print_styles', 'ss_styles' );
 
 // admin notice for users
 function ss_admin_notice() {
 	$user_id = get_current_user_id();
-	$admin_url = ( isset( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http' ) . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-	$param = ( count( $_GET ) ) ? '&' : '?';
-	if ( !get_user_meta( $user_id, 'ss_notice_dismissed_32' ) && current_user_can( 'manage_options' ) ) {
-		echo '<div class="notice notice-info"><p><a href="' . $admin_url, $param . 'dismiss" class="alignright" style="text-decoration:none"><big>' . esc_html__( 'Ⓧ', 'stop-spammer-registrations-plugin' ) . '</big></a>' . wp_kses_post( __( '<big><strong>Stop Spammers</strong> — Thank you! 💜</big>', 'stop-spammer-registrations-plugin' ) ) . '<p><a href="https://github.com/bhadaway/stop-spammers/issues" class="button-primary" style="border-color:purple;background:purple" target="_blank">' . esc_html__( 'Get Support', 'stop-spammer-registrations-plugin' ) . '</a></p></div>';
+	$version_key = str_replace( '.', '_', SS_VERSION );
+	if ( !get_user_meta( $user_id, 'ss_notice_dismissed_' . $version_key ) && current_user_can( 'manage_options' ) ) {
+		$admin_url = esc_url_raw( ( isset( $_SERVER['HTTPS'] ) && sanitize_text_field( wp_unslash( $_SERVER['HTTPS'] ) ) === 'on' ? 'https' : 'http' ) . '://' . sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) ) . sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) ) );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only checking if GET params exist for URL formatting, not processing data
+		$param = !empty( $_GET ) ? '&' : '?';
+		echo wp_kses_post( sprintf( '<div class="notice notice-warning"><p><a href="%s%sdismiss&_wpnonce=%s" class="alignright" style="text-decoration:none"><big>✕</big></a><big><strong>Stop Spammers is now Dam Spam</strong></big><p><a href="https://wordpress.org/plugins/dam-spam/" class="button-primary" style="border-color:#4aa863;background:#4aa863" target="_blank">Make the Switch</a> &nbsp; <a href="https://github.com/webguyio/dam-spam/issues" class="button-primary" target="_blank">Get Help</a></p><p>Dam Spam is the modern version of Stop Spammers where all future development will take place. The core features remain the same, but some bloated and dated features have been removed and some new smart features have been added. Please join the discussion on GitHub (github.com/webguyio/dam-spam/issues) if you have any questions or suggestions. All of your settings will automatically migrate over in the background and still be there if you decide to switch back. While migrating is optional, it\'s strongly recommended.</p></div>', esc_url( $admin_url ), esc_html( $param ), esc_attr( wp_create_nonce( 'ss_dismiss_notice' ) ) ) );
 	}
 }
 add_action( 'admin_notices', 'ss_admin_notice' );
@@ -68,185 +66,19 @@ add_action( 'admin_notices', 'ss_admin_notice' );
 // dismiss admin notice for users
 function ss_notice_dismissed() {
 	$user_id = get_current_user_id();
-	if ( isset( $_GET['dismiss'] ) ) {
-		add_user_meta( $user_id, 'ss_notice_dismissed_32', 'true', true );
-	}
-	// Notification Control: handles notices
-	add_action( 'admin_print_scripts', 'ss_replace_admin_notices', 998 );
-	if ( get_option( 'ss_hide_admin_notices', 'no' ) !== 'yes' ) {
-		add_action( 'admin_head', 'ss_show_admin_notices_func', 998 );
+	if ( isset( $_GET['dismiss'] ) && isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ss_dismiss_notice' ) ) {
+		$version_key = str_replace( '.', '_', SS_VERSION );
+		add_user_meta( $user_id, 'ss_notice_dismissed_' . $version_key, 'true', true );
 	}
 }
 add_action( 'admin_init', 'ss_notice_dismissed' );
-
-// replace notifications with new notifications
-function ss_replace_admin_notices() {
-	global $ss_all_notices;
-	$options = ss_get_options();
-	try {
-		$admin_notices 	   = &ss_get_admin_notices( "admin_notices" );
-		$all_admin_notices = &ss_get_admin_notices( "all_admin_notices" );
-		$wp_filter_notices = ss_merge_notices( $admin_notices, $all_admin_notices );
-	} catch ( Exception $e ) {
-		$wp_filter_notices = array();
-	}
-	$content = array();
-	$ss_notice_preference = get_user_meta( get_current_user_id(), 'ss_notice_preference', true );
-	foreach ( ( array ) $wp_filter_notices as $filters ) {
-		foreach ( $filters as $callback => $callback_array ) {
-			if ( $callback === 'usof_hide_admin_notices_start' || $callback === 'usof_hide_admin_notices_end' ) {
-				continue;
-			}
-			ob_start();
-			$args = array();
-			$accepted_args = isset( $callback_array['accepted_args'] ) && !empty( $callback_array['accepted_args'] ) ? $callback_array['accepted_args'] : 0;
-			if ( $accepted_args > 0 ) {
-				for ( $i = 0; $i < ( int ) $accepted_args; $i ++ ) {
-					$args[] = null;
-				}
-			}
-			call_user_func_array( $callback_array['function'], $args );
-			$cont = ob_get_clean();
-			if ( empty( $cont ) ) {
-				continue;
-			}
-			$salt     = is_multisite() ? get_current_blog_id() : '';
-			$txt      = preg_replace( '/<(script|style)([^>]+)?>(.*?)<\/(script|style)>/is', '', $cont );
-			$uniq_id1 = md5( strip_tags( str_replace( ["\t", "\r", "\n", " "], "", $txt ) ) . $salt );
-			$uniq_id2 = md5( $callback . $salt );
-			if ( is_array( $callback_array['function'] ) && sizeof( $callback_array['function'] ) == 2 ) {
-				$class = $callback_array['function'][0];
-				if ( is_object( $class ) ) {
-					$class_name  = get_class( $class );
-					$method_name = $callback_array['function'][1];
-					$uniq_id2    = md5( $class_name . ':' . $method_name );
-				}
-			}
-			if ( isset( $ss_notice_preference["{$uniq_id1}_{$uniq_id2}"] ) ) {
-				continue;
-			}
-			$hide_for_user = "";
-			$hide_for_all  = "";
-			if ( $options['ss_keep_hidden_btn'] === 'Y' ) {
-				$hide_for_user = "<a data-target='user' data-notice-id='{$uniq_id1}_{$uniq_id2}' class='ss-hide-notice'>" . __( 'Keep Hidden', 'stop-spammer-registrations-plugin' ) . "</a>";
-			}
-			if ( $options['ss_hide_all_btn'] === 'Y' ) {
-				$hide_for_all = "<a data-target='all' data-notice-id='{$uniq_id1}_{$uniq_id2}' class='ss-hide-notice' href='admin.php?page=ss_options#notificationcontrol'>" . __( 'Hide All Notices', 'stop-spammer-registrations-plugin' ) . "</a>";
-			}
-			// fix for WooCommerce membership and Jetpack message
-			if ( $cont != '<div class="js-wc-memberships-admin-notice-placeholder"></div>' && false === strpos( $cont, 'jetpack-jitm-message' ) ) {
-				$cont = preg_replace( '/<(noscript|script|style)([^>]+)?>(.*?)<\/(noscript|script|style)>(<\/(noscript|script|style)>)*/is', '', $cont );
-				$cont = preg_replace( '/<!--(.*?)-->/is', '', $cont );
-				$cont = rtrim( trim( $cont ) );
-				$cont = preg_replace( '/^(<div[^>]+>)(.*?)(<\/div>)$/is', "$1<div class='ss-hide-notices'>$2</div><div class='ss-hide-links'>{$hide_for_user} {$hide_for_all}</div>$3", $cont );
-			}
-			if ( empty( $cont ) ) {
-				continue;
-			}
-			$content[] = $cont;
-		}
-		$ss_all_notices = $content;
-	}
-	ss_clear_notices( 'user_admin_notices' );
-	ss_clear_notices( 'network_admin_notices' );
-	ss_clear_notices( 'admin_notices', array( 'Learndash_Admin_Menus_Tabs', 'WC_Memberships_Admin', 'YIT_Plugin_Panel_WooCommerce' ), array( 'et_pb_export_layouts_interface' ) );
-	ss_clear_notices( 'all_admin_notices', array( 'Learndash_Admin_Menus_Tabs', 'WC_Memberships_Admin', 'YIT_Plugin_Panel_WooCommerce' ), array( 'et_pb_export_layouts_interface' ) );
-}
-
-// get admin notifications
-function &ss_get_admin_notices( $key ) {
-	global $wp_filter;
-	$default = array();
-	if ( $key === 'admin_notices' && is_multisite() && is_network_admin() ) {
-		$key = 'network_admin_notices';
-	}
-	if ( !isset( $wp_filter[$key] ) ) {
-		return $default;
-	}
-	return $wp_filter[$key]->callbacks;
-}
-
-// merges admin and network notifications
-function ss_merge_notices ( $array1, $array2 ) {
-	if ( !empty( $array2 ) ) {
-		foreach ( $array2 as $key => $value ) {
-			if ( !isset( $array1[$key] ) ) {
-				$array1[$key] = $value;
-			} else if ( is_array( $array1[$key] ) ) {
-				$array1[$key] = $array1[$key] + $value;
-			}
-		}
-	}
-	return $array1;
-}
-
-// clear existing notifications so it doesn't show twice
-function ss_clear_notices ( $key, $excluded_classes = array(), $excluded_callback_names = array() ) {
-	$wp_filter = &ss_get_admin_notices( $key );
-	if ( !empty( $wp_filter ) ) {
-		foreach ( ( array ) $wp_filter as $f_key => $f ) {
-			foreach ( $f as $callback => $callback_array ) {
-				if ( is_array( $callback_array['function'] ) && sizeof( $callback_array['function'] ) == 2 ) {
-					$class = $callback_array['function'][0];
-					if ( is_object( $class ) ) {
-						$class_name = get_class( $class );
-						if ( in_array( $class_name, $excluded_classes ) ) {
-							continue;
-						}
-					}
-				}
-				if ( in_array( $callback, $excluded_callback_names ) ) {
-					continue;
-				}
-				unset( $wp_filter[$f_key][$callback] );
-			}
-		}
-	}
-}
-
-// show notifications based on admin
-function ss_show_admin_notices_func() {
-	if ( is_multisite() && is_network_admin() ) {
-		add_action( 'network_admin_notices', 'ss_show_admin_notices' );
-	} else {
-		add_action( 'admin_notices', 'ss_show_admin_notices' );
-	}
-}
-
-// show notifications
-function ss_show_admin_notices() {
-	global $ss_all_notices;
-	if ( empty( $ss_all_notices ) ) {
-		return;
-	}
-	foreach ( $ss_all_notices as $val ) {
-		echo $val;
-	}
-}
-
-// add hidden notification to user meta
-function ss_update_notice_preference() {
-	if ( !check_ajax_referer( 'ss_update_notice_preference_nonce', false, false ) ) {
-		wp_send_json_error( __( 'Unauthorized', 'stop-spammer-registrations-plugin' ), 401 );
-	}
-	$user_id = get_current_user_id();
-	$ss_notice_preference = get_user_meta( $user_id, 'ss_notice_preference', true );
-	if ( !is_array( $ss_notice_preference ) ) {
-		$ss_notice_preference = array();
-	}
-	$notice_id = sanitize_text_field( $_POST['notice_id'] );
-	$ss_notice_preference[$notice_id] = $notice_id;
-	update_user_meta( $user_id, 'ss_notice_preference', $ss_notice_preference );
-	wp_die();
-}
-add_action( 'wp_ajax_ss_update_notice_preference', 'ss_update_notice_preference' );
 
 // WooCommerce warning for users
 function ss_wc_admin_notice() {
 	if ( is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
 		$user_id = get_current_user_id();
 		if ( !get_user_meta( $user_id, 'ss_wc_notice_dismissed' ) && current_user_can( 'manage_options' ) ) {
-			echo '<div class="notice notice-info"><p style="color:purple">' . __( '<big><strong>WooCommerce Detected</strong></big> | We recommend <a href="admin.php?page=ss_options">adjusting these options</a> if you experience any issues using WooCommerce and Stop Spammers together.', 'stop-spammers' ) . '<a href="?sswc-dismiss" class="alignright">' . __( 'Dismiss', 'stop-spammer-registrations-plugin' ) . '</a></p></div>';
+			echo '<div class="notice notice-info"><p style="color:purple"><a href="?sswc-dismiss&_wpnonce=' . esc_attr( wp_create_nonce( 'ss_dismiss_wc_notice' ) ) . '" class="alignright" style="text-decoration:none"><big>✕</big></a><big><strong>WooCommerce Detected</strong></big> | We recommend <a href="admin.php?page=ss_options">adjusting these options</a> if you experience any issues using WooCommerce and Stop Spammers together.</p></div>';
 		}
 	}
 }
@@ -256,7 +88,7 @@ add_action( 'admin_notices', 'ss_wc_admin_notice' );
 function ss_wc_notice_dismissed() {
 	if ( is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
 		$user_id = get_current_user_id();
-		if ( isset( $_GET['sswc-dismiss'] ) ) {
+		if ( isset( $_GET['sswc-dismiss'] ) && isset( $_GET['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'ss_dismiss_wc_notice' ) ) {
 			add_user_meta( $user_id, 'ss_wc_notice_dismissed', 'true', true );
 		}
 	}
@@ -362,7 +194,7 @@ function ss_init() {
 		// see if we are returning from a block
 		if ( array_key_exists( 'ss_block', $_POST ) && array_key_exists( 'kn', $_POST ) ) {
 			// block form hit
-			if ( !empty( $_POST['kn'] ) && wp_verify_nonce( $_POST['kn'], 'ss_stopspam_block' ) ) {
+			if ( !empty( $_POST['kn'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['kn'] ) ), 'ss_stopspam_block' ) ) {
 				// call the checker program
 				sfs_errorsonoff();
 				$options = ss_get_options();
@@ -465,10 +297,10 @@ function ss_set_stats( &$stats, $addon = array() ) {
 	if ( empty( $addon ) || !is_array( $addon ) ) {
 		// need to know if the spam count has changed
 		if ( $stats['spcount'] == 0 || empty( $stats['spdate'] ) ) {
-			$stats['spdate'] = date( 'Y/m/d', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
+			$stats['spdate'] = gmdate( 'Y/m/d', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
 		}
 		if ( $stats['spmcount'] == 0 || empty( $stats['spmdate'] ) ) {
-			$stats['spmdate'] = date( 'Y/m/d', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
+			$stats['spmdate'] = gmdate( 'Y/m/d', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
 		}
 	} else {
 		// update addon stats
@@ -513,7 +345,8 @@ function ss_set_options( $options ) {
 }
 
 function ss_get_ip() {
-	return $_SERVER['REMOTE_ADDR'];
+	$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+	return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : '';
 }
 
 function ss_admin_menu() {
@@ -578,7 +411,7 @@ function ss_log_akismet() {
 	}
 	// not on Allow Lists
 	$post		    = get_post_variables();
-	$post['reason'] = __( 'from Akismet', 'stop-spammer-registrations-plugin' );
+	$post['reason'] = 'from Akismet';
 	$post['chk']	= 'chkakismet';
 	$ansa		    = be_load( 'ss_log_bad', ss_get_ip(), $stats, $options, $post );
 	sfs_errorsonoff( 'off' );
@@ -633,7 +466,8 @@ function be_load( $file, $ip, &$stats = array(), &$options = array(), &$post = a
 	if ( is_array( $file ) ) { // add-ons pass their array
 		// this is an absolute location so load it directly
 		if ( !file_exists( $file[0] ) ) {
-			sfs_debug_msg( __( 'not found ', 'stop-spammer-registrations-plugin' ) . print_r( $add, true ) );
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- Debug logging for missing addon files
+			sfs_debug_msg( 'not found ' . print_r( $add, true ) );
 			return false;
 		}
 		// require_once( $file[0] );
@@ -660,7 +494,7 @@ function be_load( $file, $ip, &$stats = array(), &$options = array(), &$post = a
 		$fd	= str_replace( "/", DIRECTORY_SEPARATOR, $fd ); // Windows fix
 	}
 	if ( !file_exists( $fd ) ) {
-		_e( '<br><br>Missing ' . $file, $fd . '<br><br>', 'stop-spammer-registrations-plugin' );
+		echo '<br><br>Missing ' . esc_html( $file ), esc_html( $fd ) . '<br><br>';
 		return false;
 	}
 	require_once( $fd );
@@ -675,6 +509,16 @@ function be_load( $file, $ip, &$stats = array(), &$options = array(), &$post = a
 
 // this should be moved to a dynamic load, perhaps - it is one of the most common things
 function get_post_variables() {
+	if ( isset( $_POST['ss_post_variables_nonce'] ) && !wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ss_post_variables_nonce'] ) ), 'ss_post_variables_action' ) ) {
+		return array(
+			'email'   => '',
+			'author'  => '',
+			'pwd'	  => '',
+			'comment' => '',
+			'subject' => '',
+			'url'	  => ''
+		);
+	}
 	// for WordPress and other login and comment programs
 	// need to find: login password comment author email
 	// copied from stop spammers plugin
@@ -690,7 +534,7 @@ function get_post_variables() {
 	if ( empty( $_POST ) || !is_array( $_POST ) ) {
 		return $ansa;
 	}
-	$p = $_POST;
+	$p = wp_unslash( $_POST );
 	$search  = array(
 		'email'   => array(
 			'email',
@@ -700,7 +544,7 @@ function get_post_variables() {
 			'your-email'
 		),
 		// 'input_' = WooCommerce forms
-		'author'  => array(
+		'author' => array(
 			'author',
 			'name',
 			'username',
@@ -711,7 +555,7 @@ function get_post_variables() {
 			'_id',
 			'your-name'
 		),
-		'pwd'	  => array(
+		'pwd' => array(
 			'pwd',
 			'password',
 			'psw',
@@ -732,7 +576,7 @@ function get_post_variables() {
 			'topic',
 			'your-subject'
 		),
-		'url'	  => array(
+		'url' => array(
 			'url',
 			'link',
 			'site',
@@ -751,7 +595,7 @@ function get_post_variables() {
 				if ( stripos( $pkey, $srch ) !== false ) {
 					// got a hit
 					if ( is_array( $pval ) ) {
-						$pval = print_r( $pval, true );
+						$pval = wp_json_encode( $pval );
 					}
 					$ansa[$var] = $pval;
 					break;
@@ -767,7 +611,7 @@ function get_post_variables() {
 				if ( stripos( $pkey, 'input_' ) ) {
 					// might have an email
 					if ( is_array( $pval ) ) {
-						$pval = print_r( $pval, true );
+						$pval = wp_json_encode( $pval );
 					}
 					if ( strpos( $pval, '@' ) !== false && strrpos( $pval, '.' ) > strpos( $pval, '@' ) ) {
 						// close enough
@@ -778,48 +622,27 @@ function get_post_variables() {
 			}
 		}
 	}
-	/*
-	foreach ( $search as $var => $sa ) {
-		foreach ( $sa as $srch ) {
-			foreach ( $p as $pkey => $pval ) {
-				if ( is_string( $pval ) && !is_array( $pval ) ) { // WooCommerce fix - overkill
-					if ( strpos( $pkey, $srch ) !==false ) {
-						if ( $var=='email' && strpos( $pval, '@' ) !== false && strrpos( $pval, '.' ) > strpos( $pval, '@' ) ) { // only valid with @ before last dot sign and .
-							$ansa[$var] = $pval;
-							$emfound = true;
-							break;
-						} else { // no @ sign - save for now, hope for better
-							if ( empty( $ansa[$var] ) ) $ansa[$var] = $pval;
-						}
-					}
-					if ( $var != 'email' && $emfound ) break; // keep checking email even if we have one - look for better
-				}
-			}
-		}
-	}
-	*/
 	// sanitize input - some of this is stored in history and needs to be cleaned up
 	foreach ( $ansa as $key => $value ) {
 		// clean the variables even more
 		$ansa[$key] = sanitize_text_field( $value ); // really clean gets rid of high value characters
 	}
-	if ( strlen( $ansa['email'] ) > 80 ) {
-		$ansa['email'] = substr( $ansa['email'], 0, 77 ) . '...';
+	if ( !empty( $ansa['email'] ) && !is_email( $ansa['email'] ) ) {
+		$ansa['email'] = '';
 	}
-	if ( strlen( $ansa['author'] ) > 80 ) {
-		$ansa['author'] = substr( $ansa['author'], 0, 77 ) . '...';
-	}
-	if ( strlen( $ansa['pwd'] ) > 32 ) {
-		$ansa['pwd'] = substr( $ansa['pwd'], 0, 29 ) . '...';
-	}
-	if ( strlen( $ansa['comment'] ) > 999 ) {
-		$ansa['comment'] = substr( $ansa['comment'], 0, 996 ) . '...';
-	}
-	if ( strlen( $ansa['subject'] ) > 80 ) {
-		$ansa['subject'] = substr( $ansa['subject'], 0, 77 ) . '...';
-	}
-	if ( strlen( $ansa['url'] ) > 80 ) {
-		$ansa['url'] = substr( $ansa['url'], 0, 77 ) . '...';
+	// truncate fields to prevent excessive storage
+	$max_lengths = array(
+		'email'   => 80,
+		'author'  => 80,
+		'pwd'	  => 32,
+		'comment' => 999,
+		'subject' => 80,
+		'url'	  => 80
+	);
+	foreach ( $max_lengths as $field => $max_length ) {
+		if ( strlen( $ansa[$field] ) > $max_length ) {
+			$ansa[$field] = substr( $ansa[$field], 0, $max_length - 3 ) . '...';
+		}
 	}
 	// print_r( $ansa );
 	// exit;
@@ -892,8 +715,8 @@ function ss_log_user_ip( $user_login = "", $user = "" ) {
 	}
 	$user_id = $user->ID;
 	// $ip = ss_get_ip();
-	$ip		 = $_SERVER['REMOTE_ADDR'];
-	$oldip   = get_user_meta( $user_id, 'signup_ip', true );
+	$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? filter_var( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ), FILTER_VALIDATE_IP ) : '';
+	$oldip = get_user_meta( $user_id, 'signup_ip', true );
 	if ( empty( $oldip ) || $ip != $oldip ) {
 		update_user_meta( $user_id, 'signup_ip', $ip );
 	}
@@ -911,12 +734,13 @@ class SSRegDate {
 		add_filter( 'request', array( $this, 'users_orderby_column' ) );
 	}
 	public static function users_columns( $columns ) {
-		$columns['registerdate'] = _x( 'Registered', 'user', 'stop-spammer-registrations-plugin' );
+		$columns['registerdate'] = 'Registered';
 		return $columns;
 	}
 	public static function users_custom_column( $value, $column_name, $user_id ) {
 		global $mode;
-		$mode = empty( $_REQUEST['mode'] ) ? 'list' : $_REQUEST['mode'];
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading WP core display mode parameter for formatting only
+		$mode = empty( $_REQUEST['mode'] ) ? 'list' : sanitize_text_field( wp_unslash( $_REQUEST['mode'] ) );
 		if ( 'registerdate' != $column_name ) {
 			return $value;
 		} else {
@@ -940,6 +764,7 @@ class SSRegDate {
 	public static function users_orderby_column( $vars ) {
 		if ( isset( $vars['orderby'] ) && 'registerdate' == $vars['orderby'] ) {
 			$vars = array_merge( $vars, array(
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Necessary for user registration date sorting functionality
 				'meta_key' => 'registerdate',
 				'orderby' => 'meta_value'
 			) );
@@ -975,22 +800,22 @@ function ss_user_reg_filter( $user_login ) {
 	sfs_errorsonoff();
 	if ( $reason !== false ) {
 		$rejectmessage  = $options['rejectmessage'];
-		$post['reason'] = __( 'Failed Registration: Bad Cache', 'stop-spammer-registrations-plugin' );
+		$post['reason'] = 'Failed Registration: Bad Cache';
 		$host['chk']	= 'chkbcache';
 		$ansa		    = be_load( 'ss_log_bad', ss_get_ip(), $stats, $options, $post );
-		wp_die( '$rejectmessage', __( 'Login Access Blocked', 'stop-spammer-registrations-plugin' ), array( 'response' => 403 ) );
+		wp_die( wp_kses_post( $rejectmessage ), 'Login Access Blocked', array( 'response' => 403 ) );
 		exit();
 	}
 	// check periods
 	$reason = be_load( 'chkperiods', ss_get_ip(), $stats, $options, $post );
 	if ( $reason !== false ) {
-		wp_die( 'Registration Access Blocked', __( 'Login Access Blocked', 'stop-spammer-registrations-plugin' ), array( 'response' => 403 ) );
+		wp_die( 'Registration Access Blocked', 'Login Access Blocked', array( 'response' => 403 ) );
 	}
 	// check the whitelist
 	$reason = ss_check_white();
 	sfs_errorsonoff();
 	if ( $reason !== false ) {
-		$post['reason'] = __( 'Passed Registration:', 'stop-spammer-registrations-plugin' ) . $reason;
+		$post['reason'] = 'Passed Registration:' . $reason;
 		$ansa		    = be_load( 'ss_log_good', ss_get_ip(), $stats, $options, $post );
 		sfs_errorsonoff( 'off' );
 		return $user_login;
@@ -998,7 +823,7 @@ function ss_user_reg_filter( $user_login ) {
 	// check the blacklist
 	// sfs_debug_msg( "Checking blacklist on registration: /r/n" . print_r( $post, true ) );
 	$ret			= be_load( 'ss_check_post', ss_get_ip(), $stats, $options, $post );
-	$post['reason'] = __( 'Passed Registration ', 'stop-spammer-registrations-plugin' ) . $ret;
+	$post['reason'] = 'Passed Registration ' . $ret;
 	$ansa		    = be_load( 'ss_log_good', ss_get_ip(), $stats, $options, $post );
 	return $user_login;
 }
@@ -1008,7 +833,8 @@ function ss_login_redirect() {
 	global $pagenow, $post;
 	$options = ss_get_options();
 	if ( get_option( 'ssp_enable_custom_login', '' ) and $options['ss_private_mode'] == "Y" and ( !is_user_logged_in() && $post->post_name != 'login' ) ) {
-		wp_redirect( site_url( 'login' ) ); exit;
+		wp_safe_redirect( site_url( 'login' ) );
+		exit;
 	} else if ( $options['ss_private_mode'] == "Y" and ( !is_user_logged_in() && ( $pagenow != 'wp-login.php' and $post->post_name != 'login' ) ) ) {
 		auth_redirect();
 	}
@@ -1017,123 +843,147 @@ add_action( 'wp', 'ss_login_redirect' );
 
 function ss_add_captcha() {
 	$options = ss_get_options();
-	$html    = '';
+	$html = '';
+	$captcha_nonce = wp_create_nonce( 'ss_captcha_action' );
 	switch ( $options['chkcaptcha'] ) {
 		case 'G':
 			// reCAPTCHA
 			$recaptchaapisite = $options['recaptchaapisite'];
-			$html  = '<script src="https://www.google.com/recaptcha/api.js" async defer></script>';
+			$html = wp_enqueue_script( 'ss-recaptcha', 'https://www.google.com/recaptcha/api.js', array(), '1', true, array( 'async' => true, 'defer' => true ) );
+			$html .= '<input type="hidden" name="ss_captcha_nonce" value="' . esc_attr( $captcha_nonce ) . '">';
 			$html .= '<input type="hidden" name="recaptcha" value="recaptcha">';
-			$html .= '<div class="g-recaptcha" data-sitekey="' . $recaptchaapisite . '"></div>';
+			$html .= '<div class="g-recaptcha" data-sitekey="' . esc_attr( $recaptchaapisite ) . '"></div>';
 		break;
 		case 'H':
 			// hCaptcha
 			$hcaptchaapisite = $options['hcaptchaapisite'];
-			$html  = '<script src="https://hcaptcha.com/1/api.js" async defer></script>';
+			$html = wp_enqueue_script( 'ss-hcaptcha', 'https://hcaptcha.com/1/api.js', array(), '1', true, array( 'async' => true, 'defer' => true ) );
+			$html .= '<input type="hidden" name="ss_captcha_nonce" value="' . esc_attr( $captcha_nonce ) . '">';
 			$html .= '<input type="hidden" name="h-captcha" value="h-captcha">';
-			$html .= '<div class="h-captcha" data-sitekey="' . $hcaptchaapisite . '"></div>';
+			$html .= '<div class="h-captcha" data-sitekey="' . esc_attr( $hcaptchaapisite ) . '"></div>';
 		break;
 		case 'S':
 			$solvmediaapivchallenge = $options['solvmediaapivchallenge'];
-			$html   = '<script src="https://api-secure.solvemedia.com/papi/challenge.script?k=' . $solvmediaapivchallenge . '"></script>';
-			$html  .= '<noscript>';
-			$html  .= '<iframe src="https://api-secure.solvemedia.com/papi/challenge.noscript?k=' . $solvmediaapivchallenge . '" height="300" width="500" frameborder="0"></iframe><br>';
-			$html  .= '<textarea name="adcopy_challenge" rows="3" cols="40"></textarea>';
-			$html  .= '<input type="hidden" name="adcopy_response" value="manual_challenge">';
-			$html  .= '</noscript>';
+			$html = wp_enqueue_script( 'ss-solvemedia', 'https://api-secure.solvemedia.com/papi/challenge.script?k=' . $solvmediaapivchallenge, array(), '1', true, array( 'async' => true, 'defer' => true ) );
+			$html .= '<input type="hidden" name="ss_captcha_nonce" value="' . esc_attr( $captcha_nonce ) . '">';
+			$html .= '<noscript>';
+			$html .= '<iframe src="https://api-secure.solvemedia.com/papi/challenge.noscript?k=' . esc_attr( $solvmediaapivchallenge ) . '" height="300" width="500" frameborder="0"></iframe><br>';
+			$html .= '<textarea name="adcopy_challenge" rows="3" cols="40"></textarea>';
+			$html .= '<input type="hidden" name="adcopy_response" value="manual_challenge">';
+			$html .= '</noscript>';
 		break;
 	}
-	echo $html;
+	$allowed_html = array(
+		'script' => array(
+			'src' => array(),
+			'async' => array(),
+			'defer' => array(),
+		),
+		'input' => array(
+			'type' => array(),
+			'name' => array(),
+			'value' => array(),
+		),
+		'div' => array(
+			'class' => array(),
+			'data-sitekey' => array(),
+		),
+		'noscript' => array(),
+		'iframe' => array(
+			'src' => array(),
+			'height' => array(),
+			'width' => array(),
+			'frameborder' => array(),
+		),
+		'textarea' => array(
+			'name' => array(),
+			'rows' => array(),
+			'cols' => array(),
+		),
+		'br' => array(),
+	);
+	echo wp_kses( $html, $allowed_html );
 }
 
 function ss_captcha_verify() {
-	global $wpdb;
+	static $verified = null;
+	if ( $verified !== null ) {
+		return $verified;
+	}
+	if ( empty( $_POST ) ) {
+		$verified = true;
+		return true;
+	}
+	if ( !isset( $_POST['ss_captcha_nonce'] ) || !wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ss_captcha_nonce'] ) ), 'ss_captcha_action' ) ) {
+		$verified = '<strong>Error:</strong> Security verification failed.';
+		return $verified;
+	}
 	$options = ss_get_options();
-	$ip 	 = ss_get_ip();
+	$ip = ss_get_ip();
 	switch ( $options['chkcaptcha'] ) {
 		case 'G':
-			if ( array_key_exists( 'recaptcha', $_POST ) && !empty( $_POST['recaptcha'] ) && array_key_exists( 'g-recaptcha-response', $_POST ) ) {
-				// check reCAPTCHA
-				$recaptchaapisecret = $options['recaptchaapisecret'];
-				$recaptchaapisite   = $options['recaptchaapisite'];
-				if ( empty( $recaptchaapisecret ) || empty( $recaptchaapisite ) ) {
-					return __( '<strong>Error:</strong> reCAPTCHA keys are not set.', 'stop-spammer-registrations-plugin' );
-				} else {
-					$g    = sanitize_textarea_field( $_REQUEST['g-recaptcha-response'] );
-					$url  = "https://www.google.com/recaptcha/api/siteverify?secret=$recaptchaapisecret&response=$g&remoteip=$ip";
-					$resp = ss_read_file( $url );
-					if ( strpos( $resp, '"success": true' ) === false ) {
-						$msg = __( '<strong>Error:</strong> Google reCAPTCHA entry does not match. Try again.', 'stop-spammer-registrations-plugin' );
-					}
-				}
+			if ( !isset( $_POST['g-recaptcha-response'] ) || empty( $_POST['g-recaptcha-response'] ) ) {
+				$verified = '<strong>Error:</strong> Please complete the reCAPTCHA.';
+				return $verified;
+			}
+			$secret = $options['recaptchaapisecret'];
+			$recaptcha_response = sanitize_textarea_field( wp_unslash( $_POST['g-recaptcha-response'] ) );
+			$response = wp_safe_remote_post( 'https://www.google.com/recaptcha/api/siteverify', array(
+				'body' => array(
+					'secret' => $secret,
+					'response' => $recaptcha_response,
+					'remoteip' => $ip
+				)
+			) );
+			if ( is_wp_error( $response ) ) {
+				$verified = '<strong>Error:</strong> Google reCAPTCHA connection failed.';
+				return $verified;
+			}
+			$parsed = json_decode( wp_remote_retrieve_body( $response ) );
+			if ( !isset( $parsed->success ) || true !== $parsed->success ) {
+				$verified = '<strong>Error:</strong> Google reCAPTCHA verification failed.';
+				return $verified;
 			}
 		break;
 		case 'H':
-			if ( array_key_exists( 'h-captcha', $_POST ) && !empty( $_POST['h-captcha'] ) && array_key_exists( 'h-captcha-response', $_POST ) ) {
-				// check hCaptcha
-				$hcaptchaapisecret = $options['hcaptchaapisecret'];
-				$hcaptchaapisite   = $options['hcaptchaapisite'];
-				if ( empty( $hcaptchaapisecret ) || empty( $hcaptchaapisite ) ) {
-					return __( '<strong>Error:</strong> hCaptcha keys are not set.', 'stop-spammer-registrations-plugin' );
-				} else {
-					$h    = sanitize_textarea_field( $_REQUEST['h-captcha-response'] );
-					$url  = "https://hcaptcha.com/siteverify?secret=$hcaptchaapisecret&response=$h&remoteip=$ip";
-					$resp = ss_read_file( $url );
-					$response = json_decode( $resp );
-					if ( !isset( $response->success ) or $response->success !== true ) {
-						return __( '<strong>Error:</strong> hCaptcha entry does not match. Try again.', 'stop-spammer-registrations-plugin' );
-					}
-				}
+			if ( !isset( $_POST['h-captcha-response'] ) || empty( $_POST['h-captcha-response'] ) ) {
+				$verified = '<strong>Error:</strong> Please complete the hCaptcha.';
+				return $verified;
+			}
+			$secret = $options['hcaptchaapisecret'];
+			$response = wp_safe_remote_post( 'https://hcaptcha.com/siteverify', array(
+				'body' => array(
+					'secret' => $secret,
+					'response' => sanitize_textarea_field( wp_unslash( $_POST['h-captcha-response'] ) ),
+					'remoteip' => $ip
+				)
+			) );
+			$parsed = json_decode( wp_remote_retrieve_body( $response ) );
+			if ( is_wp_error( $response ) || !isset( $parsed->success ) || true !== $parsed->success ) {
+				$verified = '<strong>Error:</strong> hCaptcha verification failed.';
+				return $verified;
 			}
 		break;
 		case 'S':
-			if ( array_key_exists( 'adcopy_challenge', $_POST ) && !empty( $_POST['adcopy_challenge'] ) ) {
-				$solvmediaapivchallenge = $options['solvmediaapivchallenge'];
-				$solvmediaapiverify	    = $options['solvmediaapiverify'];
-				$adcopy_challenge	    = sanitize_textarea_field( $_REQUEST['adcopy_challenge'] );
-				$adcopy_response		= sanitize_textarea_field( $_REQUEST['adcopy_response'] );
-				$postdata = http_build_query(
-					array(
-						'privatekey' => $solvmediaapiverify,
-						'challenge'  => $adcopy_challenge,
-						'response'   => $adcopy_response,
-						'remoteip'   => $ip
-					)
-				);
-				$opts = array(
-					'http' =>
-						array(
-							'method'  => 'POST',
-							'header'  => 'Content-type: application/x-www-form-urlencoded',
-							'content' => $postdata
-						)
-				);
-				$body = array(
-					'privatekey' => $solvmediaapiverify,
-					'challenge'  => $adcopy_challenge,
-					'response'   => $adcopy_response,
-					'remoteip'   => $ip
-				);
-				$args = array(
-					'user-agent'  => 'WordPress/' . '4.2' . '; ' . get_bloginfo( 'url' ),
-					'blocking'	  => true,
-					'headers'	  => array( 'Content-type: application/x-www-form-urlencoded' ),
-					'method'	  => 'POST',
-					'timeout'	  => 45,
-					'redirection' => 5,
-					'httpversion' => '1.0',
-					'body'		  => $body,
-					'cookies'	  => array()
-				);
-				$url = 'https://verify.solvemedia.com/papi/verify/';
-				$resultarray = wp_remote_post( $url, $args );
-				$result	     = $resultarray['body'];
-				if ( strpos( $result, 'true' ) === false ) {
-					return __( '<strong>Error:</strong> CAPTCHA entry does not match. Try again.', 'stop-spammer-registrations-plugin' );
-				}
+			if ( !isset( $_POST['adcopy_challenge'] ) || empty( $_POST['adcopy_challenge'] ) ) {
+				$verified = '<strong>Error:</strong> Please complete the CAPTCHA.';
+				return $verified;
+			}
+			$response = wp_safe_remote_post( 'https://verify.solvemedia.com/papi/verify/', array(
+				'body' => array(
+					'privatekey' => $options['solvmediaapiverify'],
+					'challenge' => sanitize_textarea_field( wp_unslash( $_POST['adcopy_challenge'] ) ),
+					'response' => isset( $_POST['adcopy_response'] ) ? sanitize_textarea_field( wp_unslash( $_POST['adcopy_response'] ) ) : '',
+					'remoteip' => $ip
+				)
+			) );
+			if ( is_wp_error( $response ) || false === strpos( wp_remote_retrieve_body( $response ), 'true' ) ) {
+				$verified = '<strong>Error:</strong> Solve Media CAPTCHA verification failed.';
+				return $verified;
 			}
 		break;
 	}
+	$verified = true;
 	return true;
 }
 
@@ -1178,11 +1028,18 @@ add_filter( 'pre_comment_approved', 'ss_comment_captcha_verify', 99, 1 );
 
 // action links
 function ss_summary_link( $links ) {
-	$links = array_merge( array( '<a href="' . admin_url( 'admin.php?page=stop_spammers' ) . '">' . __( 'Settings', 'stop-spammer-registrations-plugin' ) . '</a>' ), $links );
+	$links = array_merge( array( '<a href="' . admin_url( 'admin.php?page=stop_spammers' ) . '">' . 'Settings' . '</a>' ), $links );
 	return $links;
 }
 add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'ss_summary_link' );
 
 require_once( 'includes/stop-spam-utils.php' );
+
+register_activation_hook( __FILE__, 'ss_activation_check' );
+function ss_activation_check() {
+	if ( is_plugin_active( 'dam-spam/dam-spam.php' ) ) {
+		deactivate_plugins( 'dam-spam/dam-spam.php' );
+	}
+}
 
 ?>

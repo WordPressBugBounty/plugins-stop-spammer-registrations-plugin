@@ -2,8 +2,8 @@
 // checks 404s to see if anyone is fishing for an exploit
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chk404 extends be_module {
@@ -108,7 +108,7 @@ class chk404 extends be_module {
 		// ss_cd_write_file( "debug.txt", "check 404 '$hit'" );
 		foreach ( $expl as $bad ) {
 			if ( stripos( $sname, $bad ) !== false ) {
-				return __( '404 on Exploit Attempt: ' . $sname, $bad . '', 'stop-spammer-registrations-plugin' );
+				return '404 on Exploit Attempt: ' . $sname . $bad;
 			} else {
 			// echo "$sname, $bad<br>";
 			}

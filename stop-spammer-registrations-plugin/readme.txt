@@ -1,48 +1,36 @@
-=== Anti-Spam: Spam Protection | Block Spam Users, Comments, Forms ===
+=== Stop Spammers Classic ===
 
-Contributors: mcitar
-Donate link: https://calmestghost.com/donate
+Contributors: webguyio, kpgraham
+Donate link: https://damspam.com/donate
 Tags: spam, security, anti-spam, spam protection, no spam
-Tested up to: 6.5.5
+Tested up to: 6.9
 Requires at least: 3.0
 Requires PHP: 5.0
-Stable tag: 2024.7
-License: GPLv3 or later
+Stable tag: 2026.2
+License: GPL
 License URI: https://www.gnu.org/licenses/gpl.html
 
-Robust security and spam prevention. Leverage our pre-defined allow/block lists. Adjust configurable settings on too many hits, quick responses, etc.
+A simplified, restored, and preserved version of the original Stop Spammers plugin.
 
 == Description ==
 
-Antispam.
+[💬 Ask Question](https://github.com/webguyio/dam-spam/issues) | [📧 Email Me](mailto:webguywork@gmail.com)
 
-Stop spam emails, spam comments, spam registration, and spam bots and spammers in general. Run diagnostic tests, view activity, and much more with this well-maintained, mature plugin.
+A simplified, restored, and preserved version of the original Stop Spammers plugin.
 
-Stop Spammers adds security that should kill off many of your spam worries straight out-of-the-box. Because every website is different (especially if you have integrated a payment gateway), we offer dozens of features you can leverage to meet your website's specific needs. Our 50+ configuration options make personalization easy.
+🥪 [Buy Me a Sandwich](https://github.com/sponsors/webguyio)
 
-**Features**
+Development for Stop Spammers has slowed down; I recommend switching to [Dam Spam](https://damspam.com/).
 
-Extremely granular control, so that any variety of website can create a special custom cocktail just for their particular spam issues:
+🧐 [Why, What Happened?](https://github.com/webguyio/dam-spam/issues/8)
 
-* Block suspicious behavior
-* Block spam words, disposable emails, URL shortener links, all URLs TLDs and more
-* Connect third-party spam defense services
-* Block countries
-* Block/allow IPs, emails, and usernames manually
-* Hide admin notices permanently
-* Allow users to request access and send email when allow list request is approved
-* Members-only mode
-* Core forms CAPTCHA
-* Mass lookup and disable registered users and pending comments
-* Disable WordPress automated emails
+However, rest-assured that if you can't migrate to Dam Spam, I'll still continue making sure that Stop Spammers is safe, stable, and supported.
 
-We sincerely thank everyone who has contributed to the project through donations, feedback, and bug reporting. Every little bit goes a long way.
+🛟 [Get Support](https://github.com/webguyio/dam-spam/issues)
 
 == Installation ==
 
-The most powerful spam prevention for WordPress: 50+ spam-blocking settings, dianostic testing, log reports, and much more.
-
-Go to *Plugins > Add New* from your WP admin menu, search for Stop Spammers, install, and activate.
+Go to *Plugins > Add New* from your WP admin menu, search for *Stop Spammers*, install, and activate.
 
 OR
 
@@ -52,13 +40,21 @@ OR
 
 == Frequently Asked Questions ==
 
+= I'm locked out of my admin! =
+
+You'll need to access your site files (most likely via FTP), navigate to */wp-content/plugins*, and rename the */stop-spammer-registrations-plugin* folder by adding a "1" to the beginning. Once you're back in your admin, remove the "1" from the folder name and make sure to add yourself to the Allow List.
+
 = Can I use Stop Spammers with Cloudflare? =
 
-Yes. But, you may need to restore visitor IPs: [https://support.cloudflare.com/hc/sections/200805497-Restoring-Visitor-IPs](https://support.cloudflare.com/hc/sections/200805497-Restoring-Visitor-IPs).
+Yes. But, you may need to [restore visitor IPs](https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/).
+
+= Can I use Stop Spammers with Wordfence (and other spam and security plugins)? =
+
+Yes. The two can compliment each other. However, if you have only a small amount of hosting resources (mainly memory) or aren't even allowing registration on your website, using both might be overkill.
 
 = Can I use Stop Spammers with WooCommerce (and other ecommerce plugins)? =
 
-Yes. But, in some configurations, you may need to go to Stop Spammers > Protection Options > Toggle on the option for "Only Use the Plugin for Standard WordPress Forms" > Save if you're running into any issues.
+Yes. But, in some configurations, you may need to go to *Stop Spammers > Protection Options > Toggle on the option for "Only Use the Plugin for Standard WordPress Forms" > Save* if you're running into any issues.
 
 = Can I use Stop Spammers with Akismet? =
 
@@ -68,238 +64,50 @@ Yes. Stop Spammers can even check Akismet for an extra layer of protection.
 
 Yes and no. You can use all Jetpack features except for Jetpack Protect, as it conflicts with Stop Spammers.
 
-= Can I use Stop Spammers with Wordfence (and other spam and security plugins)? =
-
-Yes. The two can compliment each other. However, if you have only a small amount of hosting resources (mainly memory) or aren't even allowing registration on your website, using both might be overkill.
-
 = Why is 2FA failing? =
 
-Toggle off the "Check Credentials on All Login Attempts" option and try again.
+Under *Protection Options*, toggle off the "Check Credentials on All Login Attempts" option and try again.
 
 = Is Stop Spammers GDPR-compliant? =
 
-Yes. See: [https://law.stackexchange.com/questions/28603/how-to-satisfy-gdprs-consent-requirement-for-ip-logging](https://law.stackexchange.com/questions/28603/how-to-satisfy-gdprs-consent-requirement-for-ip-logging). Stop Spammers does not collect any data for any other purpose (like marketing or tracking). It is purely for legitimate security purposes only. Additionally, if any of your users ever requested it, all data can be deleted.
+Yes. [Under most circumstances](https://law.stackexchange.com/questions/28603/how-to-satisfy-gdprs-consent-requirement-for-ip-logging). Stop Spammers itself does not attempt to collect any PII, and collects only the minimum data needed for anti-spam control. However, enabling third-party protections introduces new data collection on external servers that could break GDPR. See the next FAQ.
+
+= What third-party services are used and what data is sent to them? =
+
+There are several optional services you may use that involve sending data to third parties including: [Google reCAPTCHA](https://policies.google.com/privacy), [hCaptcha](https://www.hcaptcha.com/privacy), [2Captcha](https://2captcha.com/privacy-policy), [Spamhaus](https://www.spamhaus.org/privacy-notice/), [Stop Forum Spam](https://www.stopforumspam.com/privacy), [Project Honeypot](https://www.projecthoneypot.org/privacy_policy.php), and [BotScout](https://botscout.com/w3c/privacy.htm). You may wish to read each services' privacy policy to see if you're comfortable using them, but generally speaking, whenever someone for example tries to use a contact form on your website, their IP address, name, and email may be sent to these services to check against spam blocklists.
 
 == Changelog ==
 
+= 2026.2 =
+* Improved handling of emails in allow and block lists
+* CSRF fixes
+
+= 2026.1 =
+* Recommendation to migrate to Dam Spam
+
+= 2026 =
+* CSRF fixes
+
+= 2025.5 =
+* CSRF fixes
+* Fixed crash bug caused by incorrectly added IP ranges
+
+= 2025.4 =
+* Cleanup
+
+= 2025.3 =
+* Donations needed
+
+= 2025.2 =
+* Bug fixes
+
+= 2025.1 =
+* Fixes (aggressive escaping breaking stuff)
+
+= 2025 =
+* Recovered version, which has been cleaned up
+
 = 2024.7 =
-* [Fix] Documentation has been restored (but probably needs work https://github.com/bhadaway/stop-spammers/wiki)
+* Previous version, which I still consider safe to use
 
-= 2024.6 =
-* [Fix] AJAX script JSON error handling
-* [New] Added version numbering to enqueued script and style files
-
-= 2024.5 =
-* [Enhanced] Security
-
-= 2024.4 =
-* [Notice] New owner (https://github.com/bhadaway/stop-spammers/issues/188)
-* [Notice] Premium has been discontinued
-* [Notice] HiveMind API has been discontinued
-
-= 2024.3 =
-* [Notice] We're making a big push to audit Stop Spammers — now's the time to jump in if you know how to code and can contribute fixes: https://github.com/bhadaway/stop-spammers.
-
-= 2024.2 =
-* [Notice] We're making a big push to audit Stop Spammers — now's the time to jump in if you know how to code and can contribute fixes: https://github.com/bhadaway/stop-spammers.
-
-= 2024.1 =
-* [Update] readme
-
-= 2024 =
-* [Fix] Arithmetic captcha
-
-= 2023.4.1 =
-* [Update] Toggle hotfix
-
-= 2023.4 =
-* [New] Check for any URL posted in a comment
-
-= 2023.3 =
-* [New] User filter/lookup to find spam registrations based on email top level domain, where first name = last name, and comment history
-* [New] Mass disable users
-* [New] Mass delete pending comments
-
-= 2023.2 =
-* [New] Disable WordPress admin email notifications
-
-= 2023.1 =
-* [Fix] Escape code
-
-= 2023 =
-* [Enhanced] Security
-
-= 2022.6 =
-* [Enhanced] Security
-
-= 2022.5 =
-* [Update] Thank you message
-
-= 2022.4 =
-* [New] Add IP addresses from comments to allow or block list
-* [Update] Thank you message
-
-= 2022.3 =
-* [Fix] JavaScript error
-
-= 2022.2 =
-* [Update] Allowing users with older versions of PHP to upgrade
-
-= 2022.1 =
-* [New] Fundraising campaign
-
-= 2022 =
-* [New] HiveMindᴮᴱᵀᴬ — A community IP block list (limited)
-* [Fix] CAPTCHAs
-
-= 2021.20 =
-* [Fix] PHP 8 error
-
-= 2021.19 =
-* [New] Enable CAPTCHA on WordPress core forms
-
-= 2021.18 =
-* [Enhanced] Security
-
-= 2021.17 =
-* [New] hCaptcha integration
-
-= 2021.16 =
-* [New] Allow Square
-
-= 2021.15 =
-* [Fix] Checking for periods in emails
-* [Fix] jQuery error
-
-= 2021.14 =
-* [Fix] Network toggle fix
-* [Fix] Design issue with icons on some browsers
-
-= 2021.13 =
-* [Update] Cloudflare IPs
-* [Fix] SFS report
-
-= 2021.12 =
-* [Fix] Minor fixes
-
-= 2021.11 =
-* [Fix] Settings fix
-
-= 2021.10 =
-* [Enhanced] Security
-
-= 2021.9 =
-* [Enhanced] Security
-
-= 2021.8 =
-* [Update] UI improvements
-* [Enhanced] Notification Control feature
-* [Fix] Math question
-
-= 2021.7 =
-* [Update] PayPal IPs
-* [Enhanced] Cleanup
-
-= 2021.6 =
-* [New] Notification Control feature
-* [New] Sortable registered date column on Users page
-* [Enhanced] Security
-* [Enhanced] Code audit and cleanup
-
-= 2021.5 =
-* [Fix] Email fix
-
-= 2021.4 =
-* [Fix] SFS report fix
-
-= 2021.3 =
-* [Fix] Error fixes
-
-= 2021.2.1 =
-* [Fix] Login issue
-
-= 2021.2 =
-* [New] Strings are now translation-ready
-* [Update] UI improvements
-* [Update] Safety checks for WooCommerce
-* [Enhanced] When approving allow requests, the email address is now whitelisted
-* [Enhanced] Code audit and cleanup
-* [Fix] "Clear the Requests" toggles off other settings
-* [Fix] Too many periods feature
-
-= 2021.1 =
-* [Update] Third-party service IP lists
-
-= 2021 =
-* [New] Private mode feature
-* [Update] UI improvements
-* [Enhanced] Too many periods feature
-* [Enhanced] Emails are now off by default (to avoid potential issues with server reputation)
-* [Enhanced] Code audit and cleanup
-* [Fix] Shortened URL option only checks for exact matches now
-
-= 2020.6.2 =
-* [Update] Minor UI improvements
-* [Fix] Duplicate email issue
-
-= 2020.6.1 =
-* [Fix] PHP notice
-
-= 2020.6 =
-* [New] Send email when allow list request is approved (community request)
-* [New] Approve or Block action in request email with link to Allow List page (community request)
-* [Update] Update Stop Spammers menu icon to 'S' logo
-* [Fix] Conditional fields hidden on page load when option is enabled
-* [Fix] Updates to multisite (community reported)
-* [Fix] Shortcode and HTML support on Spam Message (community reported)
-* [Fix] Wrong key used for the spam reason in the allow request email template sent to the web admin
-
-= 2020.5.1 =
-* [Fix] Block if email has too many periods
-
-= 2020.5 =
-* [New] Block URL shortening service links
-
-= 2020.4.5 =
-* [New] Notice
-
-= 2020.4.4 =
-* [Fix] PHP warnings
-
-= 2020.4.3 =
-* [Enhanced] Code cleanup
-
-= 2020.4.2 =
-* [Revert] Removed gettext
-
-= 2020.4.1 =
-* [Fix] Hotfix
-
-= 2020.4 =
-* [New] Force username-only login
-* [New] Force email-only login
-* [New] Disable custom passwords
-* [Enhanced] 2,500+ disposable email domains added to block list
-* [Update] Support notice
-
-= 2020.3 =
-* [Update] Usability updates
-
-= 2020.2 =
-* [Update] Plugin audit and cleanup
-
-= 2020.1.1-2020.1.4 =
-* [Update] Various hotfixes
-
-= 2020.1 =
-* [New] Check for Tor Exit Nodes
-* [New] Check for too many periods
-* [New] Check for too many hyphens
-* [New] Allow Stripe
-* [New] Allow Authorize.Net
-* [New] Allow Braintree
-* [New] Allow Recurly
-* [Update] Admin UI enhancements
-
-= 2019.6 =
-* New owner
+Credits: Created and maintained by Keith P. Graham (@kpgraham) from 2010-2017. Adopted and maintained by Web Guy (@webguyio) from 2017-2026.

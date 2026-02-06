@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkbbcode { // change name
@@ -21,7 +21,7 @@ class chkbbcode { // change name
 			foreach ( $bbcodes as $bb ) {
 				// sfs_debug_msg( "looking for $key - $bb in $data" );
 				if ( stripos( $data, $bb ) !== false ) {
-					return __( 'BBCode ' . $bb . ' in ' . $key . '', 'stop-spammer-registrations-plugin' );
+					return 'BBCode ' . $bb . ' in ' . $key;
 				}
 			}
 		}

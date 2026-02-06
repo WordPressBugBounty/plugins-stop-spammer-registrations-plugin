@@ -2,8 +2,8 @@
 // this checks 404 entries for attacks
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class ss_check_404s {
@@ -20,7 +20,7 @@ class ss_check_404s {
 		ss_log_bad( $ip, $reason, 'chk404' );
 		// need to block access
 		$rejectmessage = $options['rejectmessage'];
-		wp_die( '$rejectmessage', __( 'Login Access Blocked', 'stop-spammer-registrations-plugin' ), array( 'response' => 403 ) );
+		wp_die( '$rejectmessage', 'Login Access Blocked', array( 'response' => 403 ) );
 		exit();
 	}
 }

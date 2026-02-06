@@ -3,8 +3,8 @@
 // more than 5 comments in three minutes then they must be a spammer
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class chkmulti extends be_module {
@@ -30,8 +30,8 @@ class chkmulti extends be_module {
 			$multicnt = $options['multicnt'];
 		}
 		// clean up multi 
-		$now		= date( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
-		$nowtimeout = date( 'Y/m/d H:i:s', time() - ( 60 * $multitime ) + ( get_option( 'gmt_offset' ) * 3600 ) );
+		$now		= gmdate( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) );
+		$nowtimeout = gmdate( 'Y/m/d H:i:s', time() - ( 60 * $multitime ) + ( get_option( 'gmt_offset' ) * 3600 ) );
 		foreach ( $multi as $key => $data ) { // key is IP, data is array of time and count
 			if ( $data[0] < $nowtimeout ) {
 				unset( $multi[$key] );
@@ -47,7 +47,7 @@ class chkmulti extends be_module {
 		$stats['multi'] = $multi;
 		ss_set_stats( $stats );
 		if ( $row[1] >= $multicnt ) {
-			return __( '' . $row[1] . ' hits in last 3 minutes', 'stop-spammer-registrations-plugin' );
+			return $row[1] . ' hits in last 3 minutes';
 		}
 		return false;
 	}

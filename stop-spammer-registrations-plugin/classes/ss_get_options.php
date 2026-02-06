@@ -1,8 +1,8 @@
 <?php
 
 if ( !defined( 'ABSPATH' ) ) {
-	http_response_code( 404 );
-	die();
+	status_header( 404 );
+	exit;
 }
 
 class ss_get_options {
@@ -23,8 +23,6 @@ class ss_get_options {
 			'chkpaypal'		   	 => 'Y',
 			'chkform'		   	 => ( is_plugin_active( 'woocommerce/woocommerce.php' ) ) ? 'Y' : 'N',
 			'ss_private_mode'  	 => 'N',
-			'ss_keep_hidden_btn' => 'Y',
-			'ss_hide_all_btn'    => 'Y',
 			'chkscripts'	     => 'Y',
 			'chkvalidip'	     => 'Y',
 			'chkwlem'		     => 'Y',
@@ -36,18 +34,7 @@ class ss_get_options {
 			'chkauthorizenet'    => 'Y',
 			'chkbraintree'	     => 'Y',
 			'chkrecurly'	     => 'Y',
-			'chksquare'			 => 'Y',
-		    'new_user_notification_to_admin' => 'Y',
-			'ss_new_user_notification_to_user'=> 'Y',
-			'ss_password_change_notification_to_admin' => 'Y',
-			'ss_send_password_forgotten_email' => 'Y',
-			'ss_auto_core_update_send_email' => 'Y',
-			'ss_auto_plugin_update_send_email' => 'Y',
-		    'ss_auto_theme_update_send_email' => 'Y',
-		    'ss_send_email_change_email' => 'Y',
-			'ss_wp_notify_moderator' => 'Y',
-			'ss_wp_notify_post_author' => 'Y',
-	        'ss_password_change_notification_to_user' => 'Y'
+			'chksquare'			 => 'Y'
 		);
 		// Block List Y/N settings
 		$defaultBL = array(
@@ -268,7 +255,6 @@ class ss_get_options {
 			'blist'	      => array(),
 			'payoptions'  => array(),
 			'wlist'	      => array(),
-			'wlist_email' => array(),
 			'spamwords'   => array(
 				'-online',
 				'#1',

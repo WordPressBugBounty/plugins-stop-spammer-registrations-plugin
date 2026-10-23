@@ -16,17 +16,11 @@ A simplified, restored, and preserved version of the original Stop Spammers plug
 
 [💬 Ask Question](https://github.com/webguyio/dam-spam/issues) | [📧 Email Me](mailto:webguywork@gmail.com)
 
-A simplified, restored, and preserved version of the original Stop Spammers plugin.
+Stop Spammers is now [Dam Spam](https://wordpress.org/plugins/dam-spam/). Switching is easy. All of your settings migrate over automatically in the background.
 
-🥪 [Buy Me a Sandwich](https://github.com/sponsors/webguyio)
+Stop Spammers Classic is legacy code that will receive security patches only moving forward.
 
-Development for Stop Spammers has slowed down; I recommend switching to [Dam Spam](https://damspam.com/).
-
-🧐 [Why, What Happened?](https://github.com/webguyio/dam-spam/issues/8)
-
-However, rest-assured that if you can't migrate to Dam Spam, I'll still continue making sure that Stop Spammers is safe, stable, and supported.
-
-🛟 [Get Support](https://github.com/webguyio/dam-spam/issues)
+🥪 [Buy me a sandwich](https://github.com/sponsors/webguyio) to help preserve Stop Spammers Classic or further project development in Dam Spam if you rely on either of them.
 
 == Installation ==
 

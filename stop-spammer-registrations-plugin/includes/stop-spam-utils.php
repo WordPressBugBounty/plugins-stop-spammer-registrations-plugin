@@ -174,4 +174,8 @@ function ss_migrate_wlist_email() {
 }
 add_action( 'admin_init', 'ss_migrate_wlist_email' );
 
+function ss_esc_js_arg( $value ) {
+	return esc_attr( wp_json_encode( (string) $value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP ) );
+}
+
 ?>

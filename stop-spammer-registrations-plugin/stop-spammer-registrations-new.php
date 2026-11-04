@@ -3,7 +3,7 @@
 Plugin Name: Stop Spammers Classic
 Plugin URI: https://damspam.com/
 Description: A simplified, restored, and preserved version of the original Stop Spammers plugin.
-Version: 2026.6
+Version: 2026.7
 Requires at least: 5.0
 Requires PHP: 5.0
 Author: Web Guy
@@ -18,7 +18,7 @@ if ( !defined( 'ABSPATH' ) ) {
 }
 
 // networking requires a couple of globals
-define( 'SS_VERSION', '2026.6' );
+define( 'SS_VERSION', '2026.7' );
 define( 'SS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'SS_PLUGIN_FILE', plugin_dir_path( __FILE__ ) );
 define( 'SS_PLUGIN_DATA', wp_upload_dir()['basedir'] . '/data/' );

@@ -23,11 +23,11 @@ class ss_get_bcache {
 			$who	 = "<a title=\"Look Up WHOIS\" target=\"_stopspam\" href=\"https://whois.domaintools.com/" . esc_attr( $key ) . "\"><img src=\"$whois\" class=\"icon-action\"></a>";
 			$show   .= "<a href=\"https://www.stopforumspam.com/search?q=" . esc_attr( $key ) . "\" target=\"_stopspam\">" . esc_html( $key ) . ": " . esc_html( $value ) . "</a>";
 			// try AJAX on the delete from bad cache
-			$onclick = "onclick=\"sfs_ajax_process('" . esc_js( $key ) . "','" . esc_js( $container ) . "','" . esc_js( $cachedel ) . "','" . esc_js( $ajaxurl ) . "');return false;\"";
+			$onclick = "onclick=\"sfs_ajax_process(" . ss_esc_js_arg( $key ) . "," . ss_esc_js_arg( $container ) . "," . ss_esc_js_arg( $cachedel ) . "," . ss_esc_js_arg( $ajaxurl ) . ");return false;\"";
 			$show   .= " <a href=\"\" $onclick title=\"Delete " . esc_attr( $key ) . " from Cache\" alt=\"Delete " . esc_attr( $key ) . " from Cache\" ><img src=\"$trash\" class=\"icon-action\"></a>";
-			$onclick = "onclick=\"sfs_ajax_process('" . esc_js( $key ) . "','" . esc_js( $container ) . "','add_black','" . esc_js( $ajaxurl ) . "');return false;\"";
+			$onclick = "onclick=\"sfs_ajax_process(" . ss_esc_js_arg( $key ) . "," . ss_esc_js_arg( $container ) . ",'add_black'," . ss_esc_js_arg( $ajaxurl ) . ");return false;\"";
 			$show   .= " <a href=\"\" $onclick title=\"Add " . esc_attr( $key ) . " to Block List\" alt=\"Add to Block List\" ><img src=\"$tdown\" class=\"icon-action\"></a>";
-			$onclick = "onclick=\"sfs_ajax_process('" . esc_js( $key ) . "','" . esc_js( $container ) . "','add_white','" . esc_js( $ajaxurl ) . "');return false;\"";
+			$onclick = "onclick=\"sfs_ajax_process(" . ss_esc_js_arg( $key ) . "," . ss_esc_js_arg( $container ) . ",'add_white'," . ss_esc_js_arg( $ajaxurl ) . ");return false;\"";
 			$show   .= " <a href=\"\" $onclick title=\"Add " . esc_attr( $key ) . " to Allow List\" alt=\"Add to Allow List\" ><img src=\"$tup\" class=\"icon-action\"></a>";
 			$show   .= $who;
 			$show   .= "<br>";

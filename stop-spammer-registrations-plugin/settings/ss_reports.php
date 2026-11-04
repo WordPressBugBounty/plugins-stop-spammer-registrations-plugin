@@ -157,12 +157,12 @@ $now	  = gmdate( 'Y/m/d H:i:s', time() + ( get_option( 'gmt_offset' ) * 3600 ) )
 					<td>' . esc_html( $ip ) . wp_kses_post( $who . $stopper . $honeysearch . $botsearch );
 				if ( stripos( $reason, 'passed' ) !== false && ( $id == '/' || strpos( $id, 'login' ) ) !== false || strpos( $id, 'register' ) !== false && !in_array( $ip, $blist ) && !in_array( $ip, $wlist ) ) {
 					$ajaxurl = admin_url( 'admin-ajax.php' );
-					echo '<a href="" onclick="sfs_ajax_process(\'' . esc_js( $ip ) . '\',\'log\',\'add_black\',\'' . esc_js( $ajaxurl ) . '\');return false;" title="Add to Block List" alt="Add to Block List"><img src="' . esc_url( $tdown ) . '" class="icon-action"></a>';
+					echo '<a href="" onclick="sfs_ajax_process(' . ss_esc_js_arg( $ip ) . ',\'log\',\'add_black\',' . ss_esc_js_arg( $ajaxurl ) . ');return false;" title="Add to Block List" alt="Add to Block List"><img src="' . esc_url( $tdown ) . '" class="icon-action"></a>';
 					$options = get_option( 'ss_stop_sp_reg_options' );
 					$apikey  = $options['apikey'];
 					if ( !empty( $apikey ) && !empty( $em ) ) {
 						echo '| ';
-						echo '<a title="Report to Stop Forum Spam (SFS)" href="#" onclick="sfs_ajax_report_spam(this,\'registration\',\'' . esc_js( $blog ) . '\',\'' . esc_js( $ajaxurl ) . '\',\'' . esc_js( $em ) . '\',\'' . esc_js( $ip ) . '\',\'' . esc_js( $au ) . '\');return false;" class="delete:the-comment-list:comment-$id::delete=1 delete vim-d vim-destructive">Report to SFS</a>';
+						echo '<a title="Report to Stop Forum Spam (SFS)" href="#" onclick="sfs_ajax_report_spam(this,\'registration\',' . ss_esc_js_arg( $blog ) . ',' . ss_esc_js_arg( $ajaxurl ) . ',' . ss_esc_js_arg( $em ) . ',' . ss_esc_js_arg( $ip ) . ',' . ss_esc_js_arg( $au ) . ');return false;" class="delete:the-comment-list:comment-$id::delete=1 delete vim-d vim-destructive">Report to SFS</a>';
 					}
 				}
 				echo '

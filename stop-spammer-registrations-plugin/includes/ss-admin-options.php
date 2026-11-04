@@ -165,7 +165,7 @@ function ss_row( $actions, $comment ) {
 		$evidence = substr( $evidence, 0, 125 ) . '...';
 	}
 	$target  = " target=\"_blank\" ";
-	$href	 = "href=\"https://www.stopforumspam.com/add.php?username=$uname&email=$email&ip_addr=$ip&evidence=$evidence&api_key=$apikey\" ";
+	$href	 = "href=\"" . esc_url( "https://www.stopforumspam.com/add.php?username=$uname&email=$email&ip_addr=$ip&evidence=$evidence&api_key=$apikey" ) . "\" ";
 	$onclick = '';
 	$blog	 = 1;
 	global $blog_id;
@@ -177,10 +177,10 @@ function ss_row( $actions, $comment ) {
 		// $target = "target=\"ss_sfs_reg_if1\"";
 		// make this the xlsrpc call
 		$href	 = "href=\"#\"";
-		$onclick = "onclick=\"sfs_ajax_report_spam(this,'" . esc_js( $ID ) . "','" . esc_js( $blog ) . "','" . esc_js( $ajaxurl ) . "');return false;\"";
+		$onclick = "onclick=\"sfs_ajax_report_spam(this," . ss_esc_js_arg( $ID ) . "," . ss_esc_js_arg( $blog ) . "," . ss_esc_js_arg( $ajaxurl ) . ");return false;\"";
 	}
-	$action .= "<span class=\"ss_action\" title=\"Add to block list\" onclick=\"sfs_ajax_process('" . esc_js( $comment->comment_author_IP ) . "','log','add_black','" . esc_js( $ajaxurl ) . "');return false;\"><img src=\"" . esc_url( SS_PLUGIN_URL ) . "images/tdown.png\" class=\"icon-action\"></span> ";
-	$action .= "<span class=\"ss_action\" title=\"Add to allow list\" onclick=\"sfs_ajax_process('" . esc_js( $comment->comment_author_IP ) . "','log','add_white','" . esc_js( $ajaxurl ) . "');return false;\"><img src=\"" . esc_url( SS_PLUGIN_URL ) . "images/tup.png\" class=\"icon-action\"> | </span>";
+	$action .= "<span class=\"ss_action\" title=\"Add to block list\" onclick=\"sfs_ajax_process(" . ss_esc_js_arg( $comment->comment_author_IP ) . ",'log','add_black'," . ss_esc_js_arg( $ajaxurl ) . ");return false;\"><img src=\"" . esc_url( SS_PLUGIN_URL ) . "images/tdown.png\" class=\"icon-action\"></span> ";
+	$action .= "<span class=\"ss_action\" title=\"Add to allow list\" onclick=\"sfs_ajax_process(" . ss_esc_js_arg( $comment->comment_author_IP ) . ",'log','add_white'," . ss_esc_js_arg( $ajaxurl ) . ");return false;\"><img src=\"" . esc_url( SS_PLUGIN_URL ) . "images/tup.png\" class=\"icon-action\"> | </span>";
 	if ( !empty( $email ) ) {
 		$action .= "<a $exst title=\"Report to Stop Forum Spam (SFS\" $target $href $onclick class='delete:the-comment-list:comment-$ID::delete=1 delete vim-d vim-destructive'>Report to SFS</a>";
 	}
